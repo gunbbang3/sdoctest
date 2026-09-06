@@ -50,3 +50,12 @@ The system shall integrate sensor acquisition, signal filtering, range
 diagnostics, and logging into a single control cycle that processes every
 available sample.
 <<<
+
+[REQUIREMENT]
+UID: REQ-7
+TITLE: Compute an actuator command with a PI control law
+STATEMENT: >>>
+The system shall compute an actuator command from an error signal using a
+proportional-integral (PI) control law, with the output saturated to a
+configured range.
+<<<

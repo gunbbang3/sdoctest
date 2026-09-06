@@ -38,3 +38,10 @@ One ``test`` need per module, linked back to its implementation need.
    :links: IMPL-6
 
    Implemented in ``tests/controller_test.cpp``.
+
+.. test:: SpeedController tests
+   :id: TEST-7
+   :links: IMPL-7
+
+   Implemented in ``tests/speed_controller_test.cpp`` (hand-written, so
+   it does carry an ``@relation(ARCH-7, ..., role=Test)`` source marker).

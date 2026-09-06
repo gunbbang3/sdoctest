@@ -45,3 +45,15 @@ sphinx-needs' ``:links:`` option instead of StrictDoc's
 
    The ``Controller`` C++ class implements REQ-6 by composing SensorInput,
    SignalFilter, Diagnostics, Logger and MathUtils into one control cycle.
+
+.. spec:: SpeedController module (Simulink MBD generated)
+   :id: ARCH-7
+   :links: REQ-7
+
+   The ``speed_controller`` C module implements REQ-7. It is generated
+   from a Simulink model (see ``../models/speed_controller.md``) with
+   Simulink Embedded Coder and must not be hand-edited. sphinx-needs has
+   no doc-side equivalent of StrictDoc's ``TYPE: File`` relation, so
+   unlike ``docs/architecture.sdoc``'s ARCH-7, this need cannot itself
+   assert that ``src/speed_controller/speed_controller.c`` exists -- see
+   ``../README.md`` for the comparison.

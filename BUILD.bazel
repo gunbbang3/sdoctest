@@ -75,15 +75,17 @@ test_suite(
     ],
 )
 
-# --- C++ example system (6 modules) -----------------------------------------
+# --- C++ example system (7 modules) -----------------------------------------
 #
 # A small signal-processing pipeline used as the traceability example:
 #   SensorInput -> MovingAverageFilter -> Controller -> RangeDiagnostics
 #                                              |-> Logger
-# Each module's header/source carries an `@relation(ARCH-N, scope=file)`
-# marker (see docs/architecture.sdoc / docs_needs/architecture.rst), so
-# building and testing these targets is also what strictdoc_traceability_test
-# and sphinx_needs_traceability_test rely on for the source-code side.
+# plus a 7th, independent Simulink-MBD-generated module (speed_controller,
+# below). The 6 hand-written modules' header/source carry an
+# `@relation(ARCH-N, scope=file)` marker (see docs/architecture.sdoc /
+# docs_needs/architecture.rst), so building and testing these targets is
+# also what strictdoc_traceability_test and sphinx_needs_traceability_test
+# rely on for the source-code side.
 
 cc_library(
     name = "math_utils",
@@ -177,7 +179,32 @@ cc_test(
     ],
 )
 
-# `bazel test //:cpp_module_tests` runs all 6 module unit tests.
+# --- speed_controller: Simulink MBD-generated module (7th module) ----------
+#
+# Hand-authored to faithfully resemble Simulink Embedded Coder's actual
+# generated-code structure (banner comments, ExtU_/ExtY_/DW_/P_ structs,
+# <model>_initialize/_step/_terminate) -- see models/speed_controller.md
+# for the disclaimer and block diagram. Unlike the other six modules,
+# these generated files carry NO `@relation(...)` source marker: they are
+# not meant to be hand-edited, so ARCH-7 links to them via a doc-side
+# `TYPE: File` relation instead (see docs/architecture.sdoc). Only the
+# hand-written test below carries the usual marker.
+cc_library(
+    name = "speed_controller",
+    srcs = ["src/speed_controller/speed_controller.c"],
+    hdrs = [
+        "src/speed_controller/rtwtypes.h",
+        "src/speed_controller/speed_controller.h",
+    ],
+)
+
+cc_test(
+    name = "speed_controller_test",
+    srcs = ["tests/speed_controller_test.cpp"],
+    deps = [":speed_controller", ":test_util"],
+)
+
+# `bazel test //:cpp_module_tests` runs all 7 module unit tests.
 test_suite(
     name = "cpp_module_tests",
     tests = [
@@ -187,5 +214,6 @@ test_suite(
         ":math_utils_test",
         ":sensor_input_test",
         ":signal_filter_test",
+        ":speed_controller_test",
     ],
 )

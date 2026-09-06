@@ -50,3 +50,11 @@ One ``impl`` need per module, linked back to its architecture element.
 
    Implemented in ``src/controller/controller.h`` and
    ``src/controller/controller.cpp``.
+
+.. impl:: SpeedController implementation
+   :id: IMPL-7
+   :links: ARCH-7
+
+   Generated from ``models/speed_controller.md`` (a Simulink model
+   stand-in) into ``src/speed_controller/speed_controller.h`` and
+   ``src/speed_controller/speed_controller.c``. Not hand-edited.

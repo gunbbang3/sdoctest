@@ -1,7 +1,7 @@
 Requirements
 ============
 
-Same six requirements as ``docs/requirements.sdoc``, expressed as
+Same seven requirements as ``docs/requirements.sdoc``, expressed as
 sphinx-needs ``req`` needs instead of StrictDoc ``[REQUIREMENT]`` nodes.
 
 .. req:: Provide raw sensor readings
@@ -40,3 +40,10 @@ sphinx-needs ``req`` needs instead of StrictDoc ``[REQUIREMENT]`` nodes.
    The system shall integrate sensor acquisition, signal filtering, range
    diagnostics, and logging into a single control cycle that processes
    every available sample.
+
+.. req:: Compute an actuator command with a PI control law
+   :id: REQ-7
+
+   The system shall compute an actuator command from an error signal
+   using a proportional-integral (PI) control law, with the output
+   saturated to a configured range.
