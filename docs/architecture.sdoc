@@ -1,0 +1,15 @@
+[DOCUMENT]
+TITLE: Architecture
+PREFIX: ARCH-
+
+[REQUIREMENT]
+UID: ARCH-1
+TITLE: Calculator module
+STATEMENT: >>>
+A `calculator` Python module implements the arithmetic operations required by REQ-1 and REQ-2.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-1
+- TYPE: Parent
+  VALUE: REQ-2

@@ -1,0 +1,24 @@
+name: Documentation traceability
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  strictdoc-traceability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: bazel-contrib/setup-bazel@0.9.1
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+
+      - name: Build the StrictDoc HTML export
+        run: bazel run //:strictdoc -- export "$GITHUB_WORKSPACE" --output-dir="${RUNNER_TEMP}/sdoc-html"
+
+      - name: Check requirement/architecture/source traceability
+        run: bazel test //:traceability_test --test_output=errors

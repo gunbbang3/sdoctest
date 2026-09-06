@@ -1,0 +1,5 @@
+bazel-*
+.venv*
+__pycache__/
+*.pyc
+MODULE.bazel.lock

@@ -1,0 +1,17 @@
+[DOCUMENT]
+TITLE: Software Requirements
+PREFIX: REQ-
+
+[REQUIREMENT]
+UID: REQ-1
+TITLE: Add two integers
+STATEMENT: >>>
+The system shall provide a function that returns the sum of two integers.
+<<<
+
+[REQUIREMENT]
+UID: REQ-2
+TITLE: Reject non-numeric input
+STATEMENT: >>>
+The system shall raise a TypeError when the addition function is called with a non-numeric argument.
+<<<
