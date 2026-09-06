@@ -26,6 +26,93 @@ tests/test_calculator.py # @relation(ARCH-1, scope=file, role=Test) 로 연결�
 소스 코드의 `@relation(...)` 주석(문서 ↔ 코드 관계)이라는 StrictDoc의 두 가지
 추적 메커니즘을 모두 사용합니다.
 
+## 필요한 도구 설치
+
+이 저장소를 빌드/테스트하는 데 필요한 것은 **Git**과 **Bazel**
+(`.bazelversion`에 `7.4.1`로 고정)뿐입니다. Python 인터프리터와 StrictDoc
+자체는 빌드 시점에 `rules_python`이 hermetic하게 받아오므로 로컬에 미리
+설치할 필요가 없습니다.
+
+### Windows
+
+1. **Git**
+   ```powershell
+   winget install --id Git.Git -e
+   ```
+   (winget이 없다면 https://git-scm.com/download/win 에서 설치 프로그램을 받으세요.)
+
+2. **Bazel (Bazelisk)** — Bazelisk는 `.bazelversion`에 적힌 버전을 자동으로
+   내려받아 실행해 주는 공식 런처입니다. 아래 중 하나를 사용하세요.
+   ```powershell
+   winget install --id Bazel.Bazelisk -e
+   # 또는
+   choco install bazelisk
+   # 또는
+   scoop install bazelisk
+   ```
+   winget/choco/scoop을 쓰지 않는다면 GitHub 릴리스에서
+   `bazelisk-windows-amd64.exe`를 받아 `bazel.exe`로 이름을 바꾼 뒤 PATH에
+   등록된 폴더에 두어도 됩니다.
+   https://github.com/bazelbuild/bazelisk/releases
+
+3. (선택, 문제 발생 시) 경로 길이 제한 때문에 빌드가 실패하면 관리자 권한
+   PowerShell에서 아래를 실행하고 재부팅하세요.
+   ```powershell
+   New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+     -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+   ```
+
+4. 설치 확인 (새 터미널에서):
+   ```powershell
+   bazel --version
+   ```
+
+### Linux (Ubuntu/Debian 기준, 다른 배포판도 패키지 매니저만 다를 뿐 동일)
+
+1. **Git**
+   ```bash
+   sudo apt-get update && sudo apt-get install -y git
+   ```
+
+2. **Bazel (Bazelisk)** — 아래 중 편한 방법 하나를 선택하세요.
+   - npm이 있다면:
+     ```bash
+     npm install -g @bazel/bazelisk
+     ```
+   - 또는 GitHub 릴리스에서 Bazelisk 바이너리를 직접 받기:
+     ```bash
+     sudo curl -fsSL -o /usr/local/bin/bazel \
+       https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64
+     sudo chmod +x /usr/local/bin/bazel
+     ```
+   - Bazelisk 대신 해당 버전의 Bazel 바이너리를 바로 받아도 됩니다
+     (버전은 `.bazelversion` 참고):
+     ```bash
+     sudo curl -fsSL -o /usr/local/bin/bazel \
+       https://github.com/bazelbuild/bazel/releases/download/7.4.1/bazel-7.4.1-linux-x86_64
+     sudo chmod +x /usr/local/bin/bazel
+     ```
+     (이 방법은 사내망 등에서 Bazelisk가 쓰는 `releases.bazel.build`가 막혀
+     있을 때도 `github.com`만 열려 있으면 동작합니다 — 이 저장소를 만들 때도
+     같은 방식으로 검증했습니다.)
+
+3. 설치 확인:
+   ```bash
+   bazel --version
+   ```
+
+### (선택) 로컬 개발용 Python 가상환경
+
+IDE 자동완성이나 `requirements.txt` 재생성처럼 Bazel 밖에서 StrictDoc을 직접
+다루고 싶을 때만 필요하며, `bazel build`/`bazel test`를 실행하는 데는
+필요하지 않습니다.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate        # Windows PowerShell: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
 ## 사용법
 
 가상환경 없이 Bazel만으로 재현됩니다 (Python 인터프리터와 strictdoc은
