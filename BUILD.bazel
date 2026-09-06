@@ -51,7 +51,7 @@ py_console_script_binary(
 # documentation tree (docs_needs/) with `-W` (warnings-as-errors) and fails
 # if any `:links:` reference is dangling. Note this only checks doc-to-doc
 # links: unlike StrictDoc, sphinx-needs does not itself verify that the
-# `src/calculator.py` / `tests/test_calculator.py` paths mentioned in
+# `src/**` / `tests/**` paths mentioned as plain text in
 # docs_needs/implementation.rst and verification.rst actually exist -- see
 # README.md for the full comparison.
 py_test(
@@ -72,5 +72,120 @@ test_suite(
     tests = [
         ":sphinx_needs_traceability_test",
         ":strictdoc_traceability_test",
+    ],
+)
+
+# --- C++ example system (6 modules) -----------------------------------------
+#
+# A small signal-processing pipeline used as the traceability example:
+#   SensorInput -> MovingAverageFilter -> Controller -> RangeDiagnostics
+#                                              |-> Logger
+# Each module's header/source carries an `@relation(ARCH-N, scope=file)`
+# marker (see docs/architecture.sdoc / docs_needs/architecture.rst), so
+# building and testing these targets is also what strictdoc_traceability_test
+# and sphinx_needs_traceability_test rely on for the source-code side.
+
+cc_library(
+    name = "math_utils",
+    srcs = ["src/math_utils/math_utils.cpp"],
+    hdrs = ["src/math_utils/math_utils.h"],
+)
+
+cc_library(
+    name = "sensor_input",
+    srcs = ["src/sensor_input/sensor_input.cpp"],
+    hdrs = ["src/sensor_input/sensor_input.h"],
+)
+
+cc_library(
+    name = "signal_filter",
+    srcs = ["src/signal_filter/signal_filter.cpp"],
+    hdrs = ["src/signal_filter/signal_filter.h"],
+)
+
+cc_library(
+    name = "diagnostics",
+    srcs = ["src/diagnostics/diagnostics.cpp"],
+    hdrs = ["src/diagnostics/diagnostics.h"],
+)
+
+cc_library(
+    name = "logger",
+    srcs = ["src/logger/logger.cpp"],
+    hdrs = ["src/logger/logger.h"],
+)
+
+cc_library(
+    name = "controller",
+    srcs = ["src/controller/controller.cpp"],
+    hdrs = ["src/controller/controller.h"],
+    deps = [
+        ":diagnostics",
+        ":logger",
+        ":math_utils",
+        ":sensor_input",
+        ":signal_filter",
+    ],
+)
+
+cc_library(
+    name = "test_util",
+    testonly = True,
+    hdrs = ["tests/test_util.h"],
+)
+
+cc_test(
+    name = "math_utils_test",
+    srcs = ["tests/math_utils_test.cpp"],
+    deps = [":math_utils", ":test_util"],
+)
+
+cc_test(
+    name = "sensor_input_test",
+    srcs = ["tests/sensor_input_test.cpp"],
+    deps = [":sensor_input", ":test_util"],
+)
+
+cc_test(
+    name = "signal_filter_test",
+    srcs = ["tests/signal_filter_test.cpp"],
+    deps = [":signal_filter", ":test_util"],
+)
+
+cc_test(
+    name = "diagnostics_test",
+    srcs = ["tests/diagnostics_test.cpp"],
+    deps = [":diagnostics", ":test_util"],
+)
+
+cc_test(
+    name = "logger_test",
+    srcs = ["tests/logger_test.cpp"],
+    deps = [":logger", ":test_util"],
+)
+
+cc_test(
+    name = "controller_test",
+    srcs = ["tests/controller_test.cpp"],
+    deps = [
+        ":controller",
+        ":diagnostics",
+        ":logger",
+        ":sensor_input",
+        ":signal_filter",
+        ":test_util",
+    ],
+)
+
+# `bazel test //:cpp_module_tests` runs all 6 module unit tests.
+test_suite(
+    name = "cpp_module_tests",
+    tests = [
+        ":controller_test",
+        ":diagnostics_test",
+        ":logger_test",
+        ":math_utils_test",
+        ":sensor_input_test",
+        ":signal_filter_test",
     ],
 )

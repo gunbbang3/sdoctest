@@ -23,5 +23,8 @@ jobs:
       - name: Build the sphinx-needs HTML export
         run: bazel run //:sphinx-build -- -W -b html "$GITHUB_WORKSPACE/docs_needs" "${RUNNER_TEMP}/needs-html"
 
+      - name: Run the C++ example module tests
+        run: bazel test //:cpp_module_tests --test_output=errors
+
       - name: Check traceability (StrictDoc + sphinx-needs, back-to-back)
         run: bazel test //:traceability_tests --test_output=errors

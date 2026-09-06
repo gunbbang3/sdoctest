@@ -4,14 +4,49 @@ PREFIX: REQ-
 
 [REQUIREMENT]
 UID: REQ-1
-TITLE: Add two integers
+TITLE: Provide raw sensor readings
 STATEMENT: >>>
-The system shall provide a function that returns the sum of two integers.
+The system shall provide access to raw, unfiltered readings from a sensor
+input source, indexed by sample number.
 <<<
 
 [REQUIREMENT]
 UID: REQ-2
-TITLE: Reject non-numeric input
+TITLE: Smooth noisy sensor signal
 STATEMENT: >>>
-The system shall raise a TypeError when the addition function is called with a non-numeric argument.
+The system shall smooth a noisy input stream using a moving-average filter
+over a configurable window size.
+<<<
+
+[REQUIREMENT]
+UID: REQ-3
+TITLE: Provide arithmetic utility functions
+STATEMENT: >>>
+The system shall provide reusable arithmetic utility functions, including
+addition and clamping a value into a closed interval.
+<<<
+
+[REQUIREMENT]
+UID: REQ-4
+TITLE: Detect out-of-range signals
+STATEMENT: >>>
+The system shall detect when a signal value falls outside a configured
+valid range and report a fault code.
+<<<
+
+[REQUIREMENT]
+UID: REQ-5
+TITLE: Log events and faults with severity
+STATEMENT: >>>
+The system shall record log entries tagged with a severity level (info,
+warning, or error) so they can be reviewed later.
+<<<
+
+[REQUIREMENT]
+UID: REQ-6
+TITLE: Integrate acquisition, filtering, diagnostics, and logging
+STATEMENT: >>>
+The system shall integrate sensor acquisition, signal filtering, range
+diagnostics, and logging into a single control cycle that processes every
+available sample.
 <<<

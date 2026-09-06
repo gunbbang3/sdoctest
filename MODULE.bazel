@@ -3,9 +3,11 @@ module(
     version = "0.1.0",
 )
 
-# Bazel-based documentation traceability test setup (StrictDoc / sdoc),
-# following the same rules_python + Bzlmod approach used by
-# eclipse-score/docs-as-code for its Sphinx-needs based traceability tooling.
+# Bazel-based documentation traceability test setup comparing StrictDoc
+# (sdoc) against Sphinx + sphinx-needs -- the tool eclipse-score/docs-as-code
+# actually uses -- over a shared C++ example (src/, tests/). The C++ side
+# uses Bazel's built-in cc_library/cc_test rules and needs no extra
+# bazel_dep: the host C/C++ toolchain is auto-detected via @bazel_tools.
 
 bazel_dep(name = "rules_python", version = "1.8.5")
 

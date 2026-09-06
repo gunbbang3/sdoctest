@@ -4,12 +4,75 @@ PREFIX: ARCH-
 
 [REQUIREMENT]
 UID: ARCH-1
-TITLE: Calculator module
+TITLE: SensorInput module
 STATEMENT: >>>
-A `calculator` Python module implements the arithmetic operations required by REQ-1 and REQ-2.
+The ``SensorInput`` C++ class implements REQ-1 by exposing raw sensor
+samples by index.
 <<<
 RELATIONS:
 - TYPE: Parent
   VALUE: REQ-1
+
+[REQUIREMENT]
+UID: ARCH-2
+TITLE: SignalFilter module
+STATEMENT: >>>
+The ``MovingAverageFilter`` C++ class implements REQ-2 by maintaining a
+sliding window over the most recent samples.
+<<<
+RELATIONS:
 - TYPE: Parent
   VALUE: REQ-2
+
+[REQUIREMENT]
+UID: ARCH-3
+TITLE: MathUtils module
+STATEMENT: >>>
+The ``math_utils`` C++ functions (``Add``, ``Clamp``) implement REQ-3.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-3
+
+[REQUIREMENT]
+UID: ARCH-4
+TITLE: Diagnostics module
+STATEMENT: >>>
+The ``RangeDiagnostics`` C++ class implements REQ-4 by checking a value
+against a configured [lo, hi] range.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-4
+
+[REQUIREMENT]
+UID: ARCH-5
+TITLE: Logger module
+STATEMENT: >>>
+The ``Logger`` C++ class implements REQ-5 by recording severity-tagged
+entries.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-5
+
+[REQUIREMENT]
+UID: ARCH-6
+TITLE: Controller module
+STATEMENT: >>>
+The ``Controller`` C++ class implements REQ-6 by composing SensorInput,
+SignalFilter, Diagnostics, Logger and MathUtils into one control cycle.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-6
+- TYPE: Parent
+  VALUE: ARCH-1
+- TYPE: Parent
+  VALUE: ARCH-2
+- TYPE: Parent
+  VALUE: ARCH-3
+- TYPE: Parent
+  VALUE: ARCH-4
+- TYPE: Parent
+  VALUE: ARCH-5
