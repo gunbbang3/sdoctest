@@ -8,6 +8,8 @@ exports_files([
     "requirements.txt",
 ])
 
+# --- StrictDoc (sdoc) -------------------------------------------------------
+
 # Run StrictDoc directly, e.g.:
 #   bazel run //:strictdoc -- export . --output-dir=/tmp/sdoc-html
 py_console_script_binary(
@@ -15,13 +17,13 @@ py_console_script_binary(
     pkg = "@pip//strictdoc:pkg",
 )
 
-# `bazel test //:traceability_test` builds the StrictDoc documentation tree
-# (docs/, src/, tests/) and fails if any requirement <-> architecture <->
-# source-code relation is broken.
+# `bazel test //:strictdoc_traceability_test` builds the StrictDoc
+# documentation tree (docs/, src/, tests/) and fails if any requirement <->
+# architecture <-> source-code relation is broken.
 py_test(
-    name = "traceability_test",
-    srcs = ["tests/traceability_test.py"],
-    main = "tests/traceability_test.py",
+    name = "strictdoc_traceability_test",
+    srcs = ["tests/strictdoc_traceability_test.py"],
+    main = "tests/strictdoc_traceability_test.py",
     data = [
         ":strictdoc",
         ":strictdoc_config.py",
@@ -31,4 +33,44 @@ py_test(
         "tests/**",
     ]),
     deps = ["@rules_python//python/runfiles"],
+)
+
+# --- Sphinx + sphinx-needs (Eclipse S-CORE's docs-as-code approach) --------
+
+# Run Sphinx directly, e.g.:
+#   bazel run //:sphinx-build -- -W -b html docs_needs /tmp/needs-html
+py_console_script_binary(
+    name = "sphinx-build",
+    pkg = "@pip//sphinx:pkg",
+    # sphinx itself doesn't depend on sphinx-needs; add it explicitly so
+    # `extensions = ["sphinx_needs"]` in docs_needs/conf.py can be imported.
+    deps = ["@pip//sphinx_needs"],
+)
+
+# `bazel test //:sphinx_needs_traceability_test` builds the sphinx-needs
+# documentation tree (docs_needs/) with `-W` (warnings-as-errors) and fails
+# if any `:links:` reference is dangling. Note this only checks doc-to-doc
+# links: unlike StrictDoc, sphinx-needs does not itself verify that the
+# `src/calculator.py` / `tests/test_calculator.py` paths mentioned in
+# docs_needs/implementation.rst and verification.rst actually exist -- see
+# README.md for the full comparison.
+py_test(
+    name = "sphinx_needs_traceability_test",
+    srcs = ["tests/sphinx_needs_traceability_test.py"],
+    main = "tests/sphinx_needs_traceability_test.py",
+    data = [
+        ":sphinx-build",
+    ] + glob([
+        "docs_needs/**",
+    ]),
+    deps = ["@rules_python//python/runfiles"],
+)
+
+# `bazel test //:traceability_tests` runs both back-to-back.
+test_suite(
+    name = "traceability_tests",
+    tests = [
+        ":sphinx_needs_traceability_test",
+        ":strictdoc_traceability_test",
+    ],
 )

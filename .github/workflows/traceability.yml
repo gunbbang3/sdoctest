@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  strictdoc-traceability:
+  traceability-comparison:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,5 +20,8 @@ jobs:
       - name: Build the StrictDoc HTML export
         run: bazel run //:strictdoc -- export "$GITHUB_WORKSPACE" --output-dir="${RUNNER_TEMP}/sdoc-html"
 
-      - name: Check requirement/architecture/source traceability
-        run: bazel test //:traceability_test --test_output=errors
+      - name: Build the sphinx-needs HTML export
+        run: bazel run //:sphinx-build -- -W -b html "$GITHUB_WORKSPACE/docs_needs" "${RUNNER_TEMP}/needs-html"
+
+      - name: Check traceability (StrictDoc + sphinx-needs, back-to-back)
+        run: bazel test //:traceability_tests --test_output=errors
