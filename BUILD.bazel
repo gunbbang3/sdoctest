@@ -34,6 +34,23 @@ py_test(
     deps = ["@rules_python//python/runfiles"],
 )
 
+# `bazel build //:strictdoc_report` produces the StrictDoc HTML
+# traceability report (requirement tree, Traceability Matrix, Source
+# Coverage) as a single reproducible build artifact, bazel-bin/strictdoc-report.tar.gz.
+genrule(
+    name = "strictdoc_report",
+    srcs = [":strictdoc_config.py"] + glob(["modules/**"]),
+    outs = ["strictdoc-report.tar.gz"],
+    cmd = """
+        set -e
+        project_root="$$(dirname '$(location :strictdoc_config.py)')"
+        out_dir="$$(mktemp -d)"
+        '$(location :strictdoc)' export "$$project_root" --output-dir "$$out_dir" --no-parallelization
+        tar -C "$$out_dir/html" -czf '$@' .
+    """,
+    tools = [":strictdoc"],
+)
+
 # --- Sphinx + sphinx-needs (Eclipse S-CORE's docs-as-code approach) --------
 
 # Run Sphinx directly, e.g.:
@@ -66,12 +83,38 @@ py_test(
     deps = ["@rules_python//python/runfiles"],
 )
 
+# `bazel build //:sphinx_needs_report` produces the sphinx-needs HTML
+# traceability report as a single reproducible build artifact,
+# bazel-bin/sphinx-needs-report.tar.gz.
+genrule(
+    name = "sphinx_needs_report",
+    srcs = glob(["modules/**"]),
+    outs = ["sphinx-needs-report.tar.gz"],
+    cmd = """
+        set -e
+        out_dir="$$(mktemp -d)"
+        '$(location :sphinx-build)' -W -b html -c modules/docs_needs modules "$$out_dir"
+        tar -C "$$out_dir" -czf '$@' .
+    """,
+    tools = [":sphinx-build"],
+)
+
 # `bazel test //:traceability_tests` runs both back-to-back.
 test_suite(
     name = "traceability_tests",
     tests = [
         ":sphinx_needs_traceability_test",
         ":strictdoc_traceability_test",
+    ],
+)
+
+# `bazel build //:traceability_reports` builds both HTML traceability
+# report tarballs in one command.
+filegroup(
+    name = "traceability_reports",
+    srcs = [
+        ":sphinx_needs_report",
+        ":strictdoc_report",
     ],
 )
 

@@ -86,6 +86,8 @@ strictdoc_config.py         StrictDoc 프로젝트 설정: include_doc_paths/inc
 BUILD.bazel                 //:strictdoc, //:sphinx-build (실행형) +
                              //:strictdoc_traceability_test, //:sphinx_needs_traceability_test,
                              //:traceability_tests (문서 검증형) +
+                             //:strictdoc_report, //:sphinx_needs_report, //:traceability_reports
+                             (HTML 리포트 산출물, 아래 "산출물" 절 참고) +
                              7개 모듈의 cc_library/cc_test + //:cpp_module_tests
 
 modules/<name>/              모듈별 자기완결 폴더 (7개: sensor_input, signal_filter,
@@ -249,11 +251,12 @@ pip install -r requirements.txt
 # 7개 모듈 단위 테스트 (Simulink MBD 생성 코드 스타일의 speed_controller 포함)
 bazel test //:cpp_module_tests --test_output=errors
 
-# StrictDoc HTML 문서(요구사항/아키텍처/추적성 매트릭스/소스 커버리지) 생성
+# StrictDoc HTML 문서(요구사항/아키텍처/추적성 매트릭스/소스 커버리지)를
+# 임시 위치에 바로 열어보고 싶을 때 (탐색용, 산출물로 남기려면 아래 "산출물" 절 참고)
 # -- 프로젝트 루트를 그대로 넘기면 strictdoc_config.py가 modules/ 아래를 재귀적으로 찾습니다.
 bazel run //:strictdoc -- export . --output-dir=/tmp/sdoc-html
 
-# sphinx-needs HTML 문서(요구사항/아키텍처/needs 테이블) 생성
+# sphinx-needs HTML 문서(요구사항/아키텍처/needs 테이블)도 마찬가지로 탐색용
 # -- 소스 디렉터리는 modules/ (7개 모듈의 docs_needs/*.rst를 모두 포함),
 #    -c로 conf.py가 있는 modules/docs_needs/를 별도 지정합니다.
 bazel run //:sphinx-build -- -W -b html -c modules/docs_needs modules /tmp/needs-html
@@ -302,6 +305,66 @@ bazel test //...
   같은 경로를 텍스트로만 담고 있어 이 검증 자체가 불가능합니다.)
 
 네 경우 모두 원래 값으로 되돌리면 다시 통과합니다.
+
+## 산출물 (테스트 결과 / 추적성 리포트)
+
+`bazel test`/`bazel build`를 실행하면 아래 두 종류의 산출물이 재현
+가능한 Bazel 빌드 출력으로 만들어집니다. 둘 다 소스 트리에는 커밋되지
+않고(`bazel-*`는 `.gitignore` 대상) 매번 새로 빌드되는 형상 산출물이며,
+CI에서는 워크플로우 실행마다 GitHub Actions 아티팩트로 자동 업로드됩니다
+(아래 "CI에서" 참고).
+
+### 테스트 결과 (JUnit XML)
+
+`bazel test`는 실행한 모든 테스트 타겟(7개 모듈 GoogleTest + StrictDoc/
+sphinx-needs 추적성 테스트 2개, 총 9개)에 대해 별도 설정 없이
+JUnit 형식 XML을 자동으로 남깁니다.
+
+```bash
+bazel test //... --test_output=errors
+find -L bazel-testlogs -name test.xml
+# 예: bazel-testlogs/math_utils_test/test.xml
+#     bazel-testlogs/strictdoc_traceability_test/test.xml
+```
+
+각 파일에는 `<testsuite>`/`<testcase>` 단위로 통과/실패, 소요 시간,
+(GoogleTest 쪽은) 실패 시 어떤 `EXPECT_*`가 어디서 깨졌는지가 담깁니다.
+Jenkins의 JUnit 플러그인이나 GitHub Actions의 테스트 리포터 액션 등
+JUnit XML을 읽는 도구라면 그대로 붙일 수 있는 표준 포맷입니다.
+
+### 추적성 리포트 (HTML)
+
+`//:strictdoc_report`, `//:sphinx_needs_report` (묶어서
+`//:traceability_reports`) genrule 타겟이 `bazel run` 없이도 두 도구의
+HTML 리포트를 압축 파일 하나짜리 빌드 산출물로 만들어 줍니다.
+
+```bash
+bazel build //:traceability_reports
+# bazel-bin/strictdoc-report.tar.gz      (요구사항 트리, Traceability Matrix, Source Coverage)
+# bazel-bin/sphinx-needs-report.tar.gz   (요구사항/아키텍처 + needs 테이블)
+
+# 열어보기
+mkdir -p /tmp/sdoc-report && tar -xzf bazel-bin/strictdoc-report.tar.gz -C /tmp/sdoc-report
+open /tmp/sdoc-report/index.html                       # StrictDoc은 최상위 index.html
+
+mkdir -p /tmp/needs-report && tar -xzf bazel-bin/sphinx-needs-report.tar.gz -C /tmp/needs-report
+open /tmp/needs-report/docs_needs/index.html            # sphinx-needs는 docs_needs/index.html
+                                                          # (root_doc 설정 때문에 한 단계 아래)
+```
+
+### CI에서
+
+`.github/workflows/traceability.yml`은 PR/main 푸시마다:
+
+1. `//:cpp_module_tests`, `//:traceability_tests`를 실행해 테스트
+   결과(JUnit XML)를 남기고,
+2. `//:traceability_reports`를 빌드해 두 HTML 리포트를 만든 뒤,
+3. 둘을 `${RUNNER_TEMP}/artifacts/{test-results,traceability-reports}`로
+   모아 `actions/upload-artifact`로 워크플로우 실행에 첨부합니다
+   (`test-and-traceability-reports`라는 이름으로, 30일 보관).
+
+GitHub의 Actions 실행 화면 하단 "Artifacts" 항목에서 실패 여부와
+무관하게(`if: always()`) 매 실행마다 내려받을 수 있습니다.
 
 ## 두 도구 비교 (StrictDoc vs sphinx-needs)
 
@@ -360,6 +423,10 @@ Bazel 패턴을 그대로 두고, 그 위에 StrictDoc(`.sdoc`)과 sphinx-needs�
 - `//:cpp_module_tests` — Eclipse S-CORE 같은 실무 프로젝트에서 실제로
   추적해야 할 대상인, 7개 SW 모듈(수기 작성 6개 + Simulink MBD 생성
   코드 스타일 1개)의 단위 테스트
+- `//:strictdoc_report`, `//:sphinx_needs_report`, `//:traceability_reports` —
+  테스트/검증이 끝난 뒤 남는 실제 산출물(HTML 리포트 tar.gz)을
+  `bazel build`만으로 재현 가능하게 만드는 genrule (자세한 내용과 CI
+  연동은 위 "산출물" 절 참고)
 
 ## 참고
 
