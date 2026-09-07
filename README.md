@@ -41,11 +41,9 @@ SpeedController (ARCH-7, Simulink MBD 생성 코드) ── 독립 서브시스�
 `Controller`는 한 사이클마다 `SensorInput`에서 원시값을 읽고,
 `MovingAverageFilter`로 평활화하고, `MathUtils::Clamp`로 클램핑한 뒤,
 `RangeDiagnostics`로 범위를 검사하고, 결과를 `Logger`에 기록합니다 —
-6개 모듈이 실제로 서로 의존하는 최소한의 통합 예제입니다. 테스트는
-외부 프레임워크(gtest 등) 없이 루트의 `tests/test_util.h`(모듈에
-속하지 않는 공용 테스트 인프라)의 작은 assert 헬퍼만으로 작성했습니다
-(`-c opt` 빌드에서도 사라지지 않도록 `assert()` 대신 직접 만든 헬퍼를
-씁니다).
+6개 모듈이 실제로 서로 의존하는 최소한의 통합 예제입니다. 단위테스트
+프레임워크로는 **GoogleTest**(`bazel_dep(name = "googletest")`, 각
+모듈의 `cc_test`가 `@googletest//:gtest_main`에 링크)를 사용합니다.
 
 ### SpeedController — Simulink MBD 생성 코드 예제
 
@@ -79,8 +77,9 @@ SpeedController (ARCH-7, Simulink MBD 생성 코드) ── 독립 서브시스�
 ## 구성
 
 ```
-MODULE.bazel                Bzlmod 설정: rules_python + pip.parse (strictdoc, sphinx, sphinx-needs).
-                             C++ 툴체인은 Bazel 내장 cc_library/cc_test를 그대로 사용 (별도 bazel_dep 불필요)
+MODULE.bazel                Bzlmod 설정: rules_python + pip.parse (strictdoc, sphinx, sphinx-needs) +
+                             bazel_dep(googletest) (단위테스트 프레임워크).
+                             C++ 툴체인 자체는 Bazel 내장 cc_library/cc_test를 그대로 사용 (별도 bazel_dep 불필요)
 requirements.txt            두 문서 툴체인의 전이 의존성을 함께 고정한 pip 락 파일
 strictdoc_config.py         StrictDoc 프로젝트 설정: include_doc_paths/include_source_paths가
                              모두 "/modules/" 하나만 가리키며, 그 아래를 재귀적으로 훑습니다
@@ -116,7 +115,8 @@ modules/docs_needs/          모듈이 아닌, sphinx-needs 전용 최상위 색
 tests/                        모듈에 속하지 않는, 저장소 전체를 다루는 공용 테스트 인프라
   strictdoc_traceability_test.py       StrictDoc 쪽 검증 py_test
   sphinx_needs_traceability_test.py    sphinx-needs 쪽 검증 py_test
-  test_util.h                          7개 모듈 테스트가 공유하는 assert 헬퍼
+                                        (7개 모듈의 cc_test 자체는 GoogleTest에 직접 링크하므로
+                                         공용 헬퍼 파일은 따로 없습니다)
 
 .github/workflows/traceability.yml   PR/main 푸시마다 C++ 모듈 테스트 + 두 문서 도구를 모두 검증하는 CI
 ```
@@ -288,9 +288,9 @@ bazel test //...
 
 - **C++ 모듈 테스트**: 예를 들어 `modules/diagnostics/src/diagnostics.cpp`의
   `<` / `>` 비교를 뒤집으면 `modules/diagnostics/tests/diagnostics_test.cpp`의
-  assert가 실패해 `bazel test //:diagnostics_test`가 실패합니다 —
-  요구사항 문서와 별개로, 구현 자체의 정확성도 이 저장소에서 함께
-  검증됩니다.
+  GoogleTest `EXPECT_EQ`가 실패해 `bazel test //:diagnostics_test`가
+  실패합니다 — 요구사항 문서와 별개로, 구현 자체의 정확성도 이 저장소에서
+  함께 검증됩니다.
 
 - **생성 코드의 `File` 관계**: `modules/speed_controller/docs/architecture.sdoc`에서
   `ARCH-7`의 `VALUE: modules/speed_controller/src/speed_controller.h`를
@@ -378,10 +378,13 @@ Bazel 패턴을 그대로 두고, 그 위에 StrictDoc(`.sdoc`)과 sphinx-needs�
   적힌 소스/테스트 파일 경로는 사람이 손으로 맞춰 적은 것이며, Bazel
   테스트가 실제 파일 존재를 검증하지 않습니다 (위 비교표 참고).
   StrictDoc 쪽은 반대로 실제 파일 경로를 검증합니다.
-- C++ 모듈 테스트는 googletest 같은 프레임워크 없이 루트 `tests/test_util.h`의
-  최소 assert 헬퍼만 사용합니다. 규모를 더 키우거나 실무에 맞추려면
-  `bazel_dep(name = "googletest", ...)`를 추가하고 `cc_test`의 `deps`에
-  `@googletest//:gtest_main`을 넣는 식으로 손쉽게 교체할 수 있습니다.
+- C++ 모듈 테스트는 GoogleTest(`bazel_dep(name = "googletest", version =
+  "1.17.0.bcr.2")`)를 사용합니다. 최신 `1.18.x`는 `abseil-cpp`가 요구하는
+  버전이 `rules_python`이 끌어오는 `protobuf`의 `abseil-cpp` 요구 버전과
+  `compatibility_level`이 달라 Bzlmod 해석이 실패해서, 둘 다와
+  호환되는 `1.17.0.bcr.2`로 고정했습니다. GoogleTest는 C++17 이상을
+  요구하므로 `.bazelrc`에 `--cxxopt=-std=c++17`/`--host_cxxopt=-std=c++17`도
+  추가되어 있습니다.
 - `modules/speed_controller/src/*`는 이 저장소에 MATLAB/Simulink가
   없어서 **실제로 Simulink Embedded Coder가 생성한 코드가 아닙니다** —
   Embedded Coder의 실제 출력 구조(배너 주석, `ExtU_`/`ExtY_`/`DW_`/`P_`

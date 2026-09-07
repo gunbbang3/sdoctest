@@ -1,21 +1,18 @@
 // @relation(ARCH-1, scope=file, role=Test)
 #include "modules/sensor_input/src/sensor_input.h"
 
-#include <iostream>
+#include <gtest/gtest.h>
 
-#include "tests/test_util.h"
-
-int main() {
-  using sdoctest::test::ExpectNear;
-  using sdoctest::test::ExpectTrue;
-
+TEST(SensorInputTest, SampleCountReportsAllSamples) {
   sdoctest::SensorInput sensor({1.0, 2.5, 3.0});
 
-  ExpectTrue(sensor.SampleCount() == 3, "SampleCount reports all samples");
-  ExpectNear(sensor.ReadRaw(0), 1.0, 1e-9, "ReadRaw(0)");
-  ExpectNear(sensor.ReadRaw(1), 2.5, 1e-9, "ReadRaw(1)");
-  ExpectNear(sensor.ReadRaw(2), 3.0, 1e-9, "ReadRaw(2)");
+  EXPECT_EQ(sensor.SampleCount(), 3u);
+}
 
-  std::cout << "OK" << std::endl;
-  return 0;
+TEST(SensorInputTest, ReadRawReturnsEachSampleInOrder) {
+  sdoctest::SensorInput sensor({1.0, 2.5, 3.0});
+
+  EXPECT_DOUBLE_EQ(sensor.ReadRaw(0), 1.0);
+  EXPECT_DOUBLE_EQ(sensor.ReadRaw(1), 2.5);
+  EXPECT_DOUBLE_EQ(sensor.ReadRaw(2), 3.0);
 }

@@ -1,23 +1,14 @@
 // @relation(ARCH-5, scope=file, role=Test)
 #include "modules/logger/src/logger.h"
 
-#include <iostream>
+#include <gtest/gtest.h>
 
-#include "tests/test_util.h"
-
-int main() {
-  using sdoctest::test::ExpectTrue;
-
+TEST(LoggerTest, EntriesAreFormattedWithSeverityLabel) {
   sdoctest::Logger logger;
   logger.Log(sdoctest::LogSeverity::kInfo, "startup");
   logger.Log(sdoctest::LogSeverity::kError, "signal out of range");
 
-  ExpectTrue(logger.Entries().size() == 2, "both entries recorded");
-  ExpectTrue(logger.Entries()[0] == "[INFO] startup",
-             "info entry formatted with severity label");
-  ExpectTrue(logger.Entries()[1] == "[ERROR] signal out of range",
-             "error entry formatted with severity label");
-
-  std::cout << "OK" << std::endl;
-  return 0;
+  ASSERT_EQ(logger.Entries().size(), 2u);
+  EXPECT_EQ(logger.Entries()[0], "[INFO] startup");
+  EXPECT_EQ(logger.Entries()[1], "[ERROR] signal out of range");
 }

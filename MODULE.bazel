@@ -5,11 +5,14 @@ module(
 
 # Bazel-based documentation traceability test setup comparing StrictDoc
 # (sdoc) against Sphinx + sphinx-needs -- the tool eclipse-score/docs-as-code
-# actually uses -- over a shared C++ example (src/, tests/). The C++ side
-# uses Bazel's built-in cc_library/cc_test rules and needs no extra
-# bazel_dep: the host C/C++ toolchain is auto-detected via @bazel_tools.
+# actually uses -- over a shared C++ example (modules/<name>/{src,tests}).
+# The C++ side uses Bazel's built-in cc_library/cc_test rules and needs no
+# extra bazel_dep for the toolchain itself: the host C/C++ toolchain is
+# auto-detected via @bazel_tools. googletest below is only the unit test
+# framework each module's cc_test links against.
 
 bazel_dep(name = "rules_python", version = "1.8.5")
+bazel_dep(name = "googletest", version = "1.17.0.bcr.2")
 
 PYTHON_VERSION = "3.11"
 

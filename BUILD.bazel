@@ -135,42 +135,38 @@ cc_library(
     ],
 )
 
-# Shared test infrastructure (not a module): a minimal assert helper used
-# by every module's cc_test below.
-cc_library(
-    name = "test_util",
-    testonly = True,
-    hdrs = ["tests/test_util.h"],
-)
+# Every module's cc_test below links against googletest's gtest_main
+# (bazel_dep in MODULE.bazel), which provides both the assertion macros
+# and the test binary's main() entry point.
 
 cc_test(
     name = "math_utils_test",
     srcs = ["modules/math_utils/tests/math_utils_test.cpp"],
-    deps = [":math_utils", ":test_util"],
+    deps = [":math_utils", "@googletest//:gtest_main"],
 )
 
 cc_test(
     name = "sensor_input_test",
     srcs = ["modules/sensor_input/tests/sensor_input_test.cpp"],
-    deps = [":sensor_input", ":test_util"],
+    deps = [":sensor_input", "@googletest//:gtest_main"],
 )
 
 cc_test(
     name = "signal_filter_test",
     srcs = ["modules/signal_filter/tests/signal_filter_test.cpp"],
-    deps = [":signal_filter", ":test_util"],
+    deps = [":signal_filter", "@googletest//:gtest_main"],
 )
 
 cc_test(
     name = "diagnostics_test",
     srcs = ["modules/diagnostics/tests/diagnostics_test.cpp"],
-    deps = [":diagnostics", ":test_util"],
+    deps = [":diagnostics", "@googletest//:gtest_main"],
 )
 
 cc_test(
     name = "logger_test",
     srcs = ["modules/logger/tests/logger_test.cpp"],
-    deps = [":logger", ":test_util"],
+    deps = [":logger", "@googletest//:gtest_main"],
 )
 
 cc_test(
@@ -182,7 +178,7 @@ cc_test(
         ":logger",
         ":sensor_input",
         ":signal_filter",
-        ":test_util",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -209,7 +205,7 @@ cc_library(
 cc_test(
     name = "speed_controller_test",
     srcs = ["modules/speed_controller/tests/speed_controller_test.cpp"],
-    deps = [":speed_controller", ":test_util"],
+    deps = [":speed_controller", "@googletest//:gtest_main"],
 )
 
 # `bazel test //:cpp_module_tests` runs all 7 module unit tests.

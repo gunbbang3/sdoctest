@@ -1,22 +1,22 @@
 // @relation(ARCH-4, scope=file, role=Test)
 #include "modules/diagnostics/src/diagnostics.h"
 
-#include <iostream>
+#include <gtest/gtest.h>
 
-#include "tests/test_util.h"
-
-int main() {
-  using sdoctest::test::ExpectTrue;
-
+TEST(DiagnosticsTest, ValueWithinRangeReportsNoFault) {
   sdoctest::RangeDiagnostics diagnostics(0.0, 100.0);
 
-  ExpectTrue(diagnostics.Check(50.0) == sdoctest::FaultCode::kNone,
-             "value within range reports no fault");
-  ExpectTrue(diagnostics.Check(-1.0) == sdoctest::FaultCode::kOutOfRange,
-             "value below range reports a fault");
-  ExpectTrue(diagnostics.Check(101.0) == sdoctest::FaultCode::kOutOfRange,
-             "value above range reports a fault");
+  EXPECT_EQ(diagnostics.Check(50.0), sdoctest::FaultCode::kNone);
+}
 
-  std::cout << "OK" << std::endl;
-  return 0;
+TEST(DiagnosticsTest, ValueBelowRangeReportsAFault) {
+  sdoctest::RangeDiagnostics diagnostics(0.0, 100.0);
+
+  EXPECT_EQ(diagnostics.Check(-1.0), sdoctest::FaultCode::kOutOfRange);
+}
+
+TEST(DiagnosticsTest, ValueAboveRangeReportsAFault) {
+  sdoctest::RangeDiagnostics diagnostics(0.0, 100.0);
+
+  EXPECT_EQ(diagnostics.Check(101.0), sdoctest::FaultCode::kOutOfRange);
 }
