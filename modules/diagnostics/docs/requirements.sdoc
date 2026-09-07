@@ -1,0 +1,11 @@
+[DOCUMENT]
+TITLE: Diagnostics Requirements
+PREFIX: REQ-
+
+[REQUIREMENT]
+UID: REQ-4
+TITLE: Detect out-of-range signals
+STATEMENT: >>>
+The system shall detect when a signal value falls outside a configured
+valid range and report a fault code.
+<<<

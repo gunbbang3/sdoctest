@@ -1,0 +1,14 @@
+[DOCUMENT]
+TITLE: SignalFilter Architecture
+PREFIX: ARCH-
+
+[REQUIREMENT]
+UID: ARCH-2
+TITLE: SignalFilter module
+STATEMENT: >>>
+The ``MovingAverageFilter`` C++ class implements REQ-2 by maintaining a
+sliding window over the most recent samples.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-2

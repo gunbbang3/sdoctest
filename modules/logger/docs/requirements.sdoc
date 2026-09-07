@@ -1,0 +1,11 @@
+[DOCUMENT]
+TITLE: Logger Requirements
+PREFIX: REQ-
+
+[REQUIREMENT]
+UID: REQ-5
+TITLE: Log events and faults with severity
+STATEMENT: >>>
+The system shall record log entries tagged with a severity level (info,
+warning, or error) so they can be reviewed later.
+<<<

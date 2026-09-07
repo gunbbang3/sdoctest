@@ -1,8 +1,9 @@
 """Bazel test that exercises the StrictDoc-based documentation traceability
-mechanism end-to-end: it runs `strictdoc export` over docs/, src/ and tests/
-and fails the build if any requirement <-> architecture <-> source relation
-is broken (missing UID, missing file, etc.), the same way eclipse-score's
-docs-as-code tooling gates traceability in CI.
+mechanism end-to-end: it runs `strictdoc export` over modules/ (each
+module's own docs/, src/, tests/) and fails the build if any requirement
+<-> architecture <-> source relation is broken (missing UID, missing
+file, etc.), the same way eclipse-score's docs-as-code tooling gates
+traceability in CI.
 """
 
 import subprocess

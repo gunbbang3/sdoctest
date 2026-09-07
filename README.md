@@ -9,7 +9,9 @@ Bazel 위에서 **StrictDoc(`sdoc`)**와 **Sphinx + sphinx-needs**
 예제 대상은 7개의 C++/C 모듈로 구성된 작은 신호처리 파이프라인이며, 그중
 하나(`speed_controller`)는 손으로 작성한 코드가 아니라 **Simulink
 모델 기반 설계(Model-Based Design, MBD)로 생성된 코드**를 흉내 낸
-모듈입니다.
+모듈입니다. **각 SW 모듈은 자신의 구현·테스트·(두 형식의) 문서를 모두
+자기 폴더 하위에 갖는 자기완결적 구조**(`modules/<module>/{src,tests,docs,docs_needs}`)
+로 배치되어 있습니다.
 
 ## 예제 시스템 (7개 모듈)
 
@@ -26,48 +28,53 @@ SensorInput ──▶ MovingAverageFilter ──▶ Controller ──▶ RangeDi
 SpeedController (ARCH-7, Simulink MBD 생성 코드) ── 독립 서브시스템
 ```
 
-| 모듈 | 클래스/함수 | 요구사항 | 소스 | 테스트 | 작성 방식 |
-|---|---|---|---|---|---|
-| SensorInput | `SensorInput` | REQ-1 | `src/sensor_input/` | `tests/sensor_input_test.cpp` | 수기 작성 |
-| SignalFilter | `MovingAverageFilter` | REQ-2 | `src/signal_filter/` | `tests/signal_filter_test.cpp` | 수기 작성 |
-| MathUtils | `Add`, `Clamp` | REQ-3 | `src/math_utils/` | `tests/math_utils_test.cpp` | 수기 작성 |
-| Diagnostics | `RangeDiagnostics` | REQ-4 | `src/diagnostics/` | `tests/diagnostics_test.cpp` | 수기 작성 |
-| Logger | `Logger` | REQ-5 | `src/logger/` | `tests/logger_test.cpp` | 수기 작성 |
-| Controller | `Controller` (위 5개를 통합) | REQ-6 | `src/controller/` | `tests/controller_test.cpp` | 수기 작성 |
-| SpeedController | `speed_controller_step()` 등 (PI 제어) | REQ-7 | `src/speed_controller/` | `tests/speed_controller_test.cpp` | **Simulink MBD 생성 코드** |
+| 모듈 | 클래스/함수 | 요구사항 | 모듈 폴더 | 작성 방식 |
+|---|---|---|---|---|
+| SensorInput | `SensorInput` | REQ-1 | `modules/sensor_input/` | 수기 작성 |
+| SignalFilter | `MovingAverageFilter` | REQ-2 | `modules/signal_filter/` | 수기 작성 |
+| MathUtils | `Add`, `Clamp` | REQ-3 | `modules/math_utils/` | 수기 작성 |
+| Diagnostics | `RangeDiagnostics` | REQ-4 | `modules/diagnostics/` | 수기 작성 |
+| Logger | `Logger` | REQ-5 | `modules/logger/` | 수기 작성 |
+| Controller | `Controller` (위 5개를 통합) | REQ-6 | `modules/controller/` | 수기 작성 |
+| SpeedController | `speed_controller_step()` 등 (PI 제어) | REQ-7 | `modules/speed_controller/` | **Simulink MBD 생성 코드** |
 
 `Controller`는 한 사이클마다 `SensorInput`에서 원시값을 읽고,
 `MovingAverageFilter`로 평활화하고, `MathUtils::Clamp`로 클램핑한 뒤,
 `RangeDiagnostics`로 범위를 검사하고, 결과를 `Logger`에 기록합니다 —
 6개 모듈이 실제로 서로 의존하는 최소한의 통합 예제입니다. 테스트는
-외부 프레임워크(gtest 등) 없이 `tests/test_util.h`의 작은 assert
-헬퍼만으로 작성했습니다 (`-c opt` 빌드에서도 사라지지 않도록 `assert()`
-대신 직접 만든 헬퍼를 씁니다).
+외부 프레임워크(gtest 등) 없이 루트의 `tests/test_util.h`(모듈에
+속하지 않는 공용 테스트 인프라)의 작은 assert 헬퍼만으로 작성했습니다
+(`-c opt` 빌드에서도 사라지지 않도록 `assert()` 대신 직접 만든 헬퍼를
+씁니다).
 
 ### SpeedController — Simulink MBD 생성 코드 예제
 
-`src/speed_controller/`는 Simulink Embedded Coder가 실제로 만들어내는
-생성 코드의 구조(배너 주석, `ExtU_`/`ExtY_`/`DW_`/`P_` 구조체,
-`<model>_initialize`/`_step`/`_terminate` 진입점, `DO NOT EDIT` 경고,
-`'<Root>/블록이름'` 형태의 블록 경로 주석)를 그대로 흉내 내어 손으로
-작성한 것입니다. **이 저장소에는 MATLAB/Simulink 툴체인이 없어 실제로
-생성된 코드가 아니며**, `models/speed_controller.md`에 그 사실과 원본
-블록 다이어그램(비례-적분 제어기 + 포화)을 설명해 두었습니다.
+`modules/speed_controller/src/`는 Simulink Embedded Coder가 실제로
+만들어내는 생성 코드의 구조(배너 주석, `ExtU_`/`ExtY_`/`DW_`/`P_`
+구조체, `<model>_initialize`/`_step`/`_terminate` 진입점, `DO NOT EDIT`
+경고, `'<Root>/블록이름'` 형태의 블록 경로 주석)를 그대로 흉내 내어
+손으로 작성한 것입니다. **이 저장소에는 MATLAB/Simulink 툴체인이 없어
+실제로 생성된 코드가 아니며**, `modules/speed_controller/models/speed_controller.md`에
+그 사실과 원본 블록 다이어그램(비례-적분 제어기 + 포화)을 설명해
+두었습니다.
 
 이 모듈이 중요한 이유는 **생성 코드는 손으로 건드리면 안 된다**는
 제약 때문입니다: 모델을 다시 빌드하면 생성물이 통째로 새로 써지므로,
 다른 6개 모듈처럼 소스 파일에 `@relation(...)` 주석을 직접 추가하는
 방식은 쓸 수 없습니다. 그래서 `ARCH-7`은:
 
-- **StrictDoc**: `docs/architecture.sdoc`에서 `TYPE: File`로 문서 쪽에서
-  생성 파일 경로(`src/speed_controller/speed_controller.c`/`.h`)를 직접
+- **StrictDoc**: `modules/speed_controller/docs/architecture.sdoc`에서
+  `TYPE: File`로 문서 쪽에서 생성 파일 경로
+  (`modules/speed_controller/src/speed_controller.c`/`.h`)를 직접
   선언합니다 — StrictDoc이 그 경로의 실제 존재 여부까지 검증합니다.
 - **sphinx-needs**: 동일한 패턴을 표현할 문서-쪽 "파일 존재 검증" 기능이
-  없으므로, `docs_needs/implementation.rst`의 `IMPL-7`에는 그냥 텍스트로
-  경로를 적어 둘 뿐입니다 (다른 모듈의 `IMPL-N`과 동일한 한계).
-- 손으로 작성한 `tests/speed_controller_test.cpp`만은 다른 테스트들과
-  동일하게 `@relation(ARCH-7, scope=file, role=Test)` 소스 마커를 씁니다
-  (테스트 코드는 생성물이 아니라 사람이 관리하는 코드이기 때문입니다).
+  없으므로, `modules/speed_controller/docs_needs/implementation.rst`의
+  `IMPL-7`에는 그냥 텍스트로 경로를 적어 둘 뿐입니다 (다른 모듈의
+  `IMPL-N`과 동일한 한계).
+- 손으로 작성한 `modules/speed_controller/tests/speed_controller_test.cpp`만은
+  다른 테스트들과 동일하게 `@relation(ARCH-7, scope=file, role=Test)`
+  소스 마커를 씁니다 (테스트 코드는 생성물이 아니라 사람이 관리하는
+  코드이기 때문입니다).
 
 ## 구성
 
@@ -75,49 +82,66 @@ SpeedController (ARCH-7, Simulink MBD 생성 코드) ── 독립 서브시스�
 MODULE.bazel                Bzlmod 설정: rules_python + pip.parse (strictdoc, sphinx, sphinx-needs).
                              C++ 툴체인은 Bazel 내장 cc_library/cc_test를 그대로 사용 (별도 bazel_dep 불필요)
 requirements.txt            두 문서 툴체인의 전이 의존성을 함께 고정한 pip 락 파일
-strictdoc_config.py         StrictDoc 프로젝트 설정 (문서/소스 경로, 활성 기능)
+strictdoc_config.py         StrictDoc 프로젝트 설정: include_doc_paths/include_source_paths가
+                             모두 "/modules/" 하나만 가리키며, 그 아래를 재귀적으로 훑습니다
 BUILD.bazel                 //:strictdoc, //:sphinx-build (실행형) +
                              //:strictdoc_traceability_test, //:sphinx_needs_traceability_test,
                              //:traceability_tests (문서 검증형) +
                              7개 모듈의 cc_library/cc_test + //:cpp_module_tests
 
-docs/                        --- StrictDoc 쪽 ---
-  requirements.sdoc          REQ-1 ~ REQ-7 (소프트웨어 요구사항)
-  architecture.sdoc          ARCH-1 ~ ARCH-7, RELATIONS: Parent -> REQ-*
-                              (ARCH-6/Controller는 ARCH-1~5에도 Parent로 연결,
-                               ARCH-7/SpeedController는 TYPE: File로 생성 파일에 직접 연결)
+modules/<name>/              모듈별 자기완결 폴더 (7개: sensor_input, signal_filter,
+                              math_utils, diagnostics, logger, controller, speed_controller)
+  src/                        구현 (.h/.cpp, speed_controller만 .c)
+                               각 파일 상단에 # @relation(ARCH-N, scope=file) 로 StrictDoc과 연결
+                               (단, speed_controller/src/*는 생성 코드라 마커 없음 -- 위 절 참고)
+  tests/<name>_test.cpp       이 모듈만의 단위 테스트
+                               # @relation(ARCH-N, scope=file, role=Test) 로 연결
+  docs/                        --- 이 모듈의 StrictDoc 문서 ---
+    requirements.sdoc          이 모듈의 REQ-N
+    architecture.sdoc          이 모듈의 ARCH-N, RELATIONS: Parent -> REQ-N
+                                 (controller는 ARCH-1~5에도 Parent로 연결,
+                                  speed_controller는 TYPE: File로 생성 파일에 직접 연결)
+  docs_needs/                  --- 이 모듈의 sphinx-needs 문서 (동일 내용) ---
+    requirements.rst           REQ-N (.. req:: 지시어)
+    architecture.rst           ARCH-N, :links: REQ-N (.. spec:: 지시어)
+    implementation.rst         IMPL-N, :links: ARCH-N (.. impl:: 지시어)
+    verification.rst           TEST-N, :links: IMPL-N (.. test:: 지시어)
 
-docs_needs/                  --- sphinx-needs 쪽 (동일 내용) ---
-  conf.py                    extensions = ["sphinx_needs"]
-  requirements.rst           REQ-1 ~ REQ-7 (.. req:: 지시어)
-  architecture.rst           ARCH-1 ~ ARCH-7, :links: REQ-*, ARCH-6은 ARCH-1~5에도 링크 (.. spec:: 지시어)
-  implementation.rst         IMPL-1 ~ IMPL-7, :links: ARCH-* (.. impl:: 지시어)
-  verification.rst           TEST-1 ~ TEST-7, :links: IMPL-* (.. test:: 지시어)
+modules/speed_controller/models/speed_controller.md   원본 Simulink 모델을 대신하는 설명 문서
 
-src/<module>/<module>.h, .cpp   각 파일 상단에 # @relation(ARCH-N, scope=file) 로 StrictDoc과 연결된 구현
-                                 (단, src/speed_controller/*는 생성 코드라 마커 없음 -- 아래 참고)
-tests/<module>_test.cpp         # @relation(ARCH-N, scope=file, role=Test) 로 연결된 테스트
-tests/test_util.h               테스트 전용 assert 헬퍼 (프레임워크 의존성 없음)
+modules/docs_needs/          모듈이 아닌, sphinx-needs 전용 최상위 색인 (아래 참고)
+  conf.py                    extensions = ["sphinx_needs"], root_doc = "docs_needs/index"
+  index.rst                  7개 모듈의 docs_needs/*.rst를 모아 하나의 toctree로 연결
 
-models/speed_controller.md      speed_controller의 원본 Simulink 모델을 대신하는 설명 문서
-
-tests/strictdoc_traceability_test.py       StrictDoc 쪽 검증 py_test
-tests/sphinx_needs_traceability_test.py    sphinx-needs 쪽 검증 py_test
+tests/                        모듈에 속하지 않는, 저장소 전체를 다루는 공용 테스트 인프라
+  strictdoc_traceability_test.py       StrictDoc 쪽 검증 py_test
+  sphinx_needs_traceability_test.py    sphinx-needs 쪽 검증 py_test
+  test_util.h                          7개 모듈 테스트가 공유하는 assert 헬퍼
 
 .github/workflows/traceability.yml   PR/main 푸시마다 C++ 모듈 테스트 + 두 문서 도구를 모두 검증하는 CI
 ```
 
-**StrictDoc 쪽** 추적 체인은 모듈마다 `REQ-N → ARCH-N → src/<module>/*
-→ tests/<module>_test.cpp`로 이어지며, `docs/architecture.sdoc`의
-`RELATIONS`(문서 간 Parent 관계)와 소스 코드의 `@relation(...)` 주석
-(문서 ↔ 코드 관계) 두 메커니즘을 모두 사용합니다. `Controller`(ARCH-6)는
-추가로 나머지 5개 ARCH 요소에도 `Parent` 관계를 걸어 통합 의존성을,
-`SpeedController`(ARCH-7)는 `TYPE: File` 관계로 생성 코드 파일 경로를
-직접 검증합니다 (아래 "SpeedController" 절 참고).
+**StrictDoc 쪽** 추적 체인은 모듈마다 `REQ-N → ARCH-N → modules/<name>/src/*
+→ modules/<name>/tests/<name>_test.cpp`로, 모두 그 모듈 자신의 폴더
+안에서 이어지며, `docs/architecture.sdoc`의 `RELATIONS`(문서 간 Parent
+관계)와 소스 코드의 `@relation(...)` 주석(문서 ↔ 코드 관계) 두 메커니즘을
+모두 사용합니다. `Controller`(ARCH-6, `modules/controller/docs/architecture.sdoc`)만
+예외적으로 다른 5개 모듈 폴더에 있는 ARCH 요소들까지 `Parent` 관계로
+가리켜 통합 의존성을 나타내고, `SpeedController`(ARCH-7)는 `TYPE: File`
+관계로 생성 코드 파일 경로를 직접 검증합니다 (위 "SpeedController"
+절 참고). StrictDoc은 `include_doc_paths`/`include_source_paths` 아래를
+재귀적으로 훑어 프로젝트 전역에서 UID를 해석하므로, 이렇게 문서가
+여러 모듈 폴더에 흩어져 있어도(그리고 서로 다른 폴더의 UID를 참조해도)
+문제없이 동작합니다.
 
 **sphinx-needs 쪽**은 같은 체인을 모듈마다 `REQ-N → ARCH-N → IMPL-N →
-TEST-N`으로 표현합니다. `IMPL-N`/`TEST-N`은 실제 소스/테스트 파일 경로를
-본문에 텍스트로만 적어두는데, 이것이 StrictDoc과의 핵심 차이입니다
+TEST-N`으로, 역시 그 모듈 자신의 `docs_needs/` 안에서 표현합니다.
+다만 Sphinx는 "루트 문서가 소스 디렉터리 하위에 있어야 한다"는 제약이
+있어 StrictDoc처럼 완전히 암묵적으로 동작하진 않습니다 — `modules/`
+자체를 소스 디렉터리로, `modules/docs_needs/index.rst`를 루트 문서로
+삼아 7개 모듈의 `docs_needs/*.rst`를 하나의 `toctree`로 모읍니다 (아래
+"사용법"의 `-c` 옵션 참고). `IMPL-N`/`TEST-N`은 실제 소스/테스트 파일
+경로를 본문에 텍스트로만 적어두는데, 이것이 StrictDoc과의 핵심 차이입니다
 (아래 "두 도구 비교" 참고).
 
 ## 필요한 도구 설치
@@ -226,10 +250,13 @@ pip install -r requirements.txt
 bazel test //:cpp_module_tests --test_output=errors
 
 # StrictDoc HTML 문서(요구사항/아키텍처/추적성 매트릭스/소스 커버리지) 생성
+# -- 프로젝트 루트를 그대로 넘기면 strictdoc_config.py가 modules/ 아래를 재귀적으로 찾습니다.
 bazel run //:strictdoc -- export . --output-dir=/tmp/sdoc-html
 
 # sphinx-needs HTML 문서(요구사항/아키텍처/needs 테이블) 생성
-bazel run //:sphinx-build -- -W -b html docs_needs /tmp/needs-html
+# -- 소스 디렉터리는 modules/ (7개 모듈의 docs_needs/*.rst를 모두 포함),
+#    -c로 conf.py가 있는 modules/docs_needs/를 별도 지정합니다.
+bazel run //:sphinx-build -- -W -b html -c modules/docs_needs modules /tmp/needs-html
 
 # 두 도구의 추적성 검증을 back-to-back으로 실행
 bazel test //:traceability_tests --test_output=errors
@@ -244,8 +271,8 @@ bazel test //...
 
 ### 추적성이 실제로 검증되는지 확인하기
 
-- **StrictDoc**: `docs/architecture.sdoc`에서 `ARCH-4`(Diagnostics)의
-  `VALUE: REQ-4`를 존재하지 않는 `VALUE: REQ-999`로 바꾸고
+- **StrictDoc**: `modules/diagnostics/docs/architecture.sdoc`에서
+  `ARCH-4`의 `VALUE: REQ-4`를 존재하지 않는 `VALUE: REQ-999`로 바꾸고
   `bazel test //:strictdoc_traceability_test`를 실행하면, StrictDoc이
   `references parent requirement which doesn't exist` 오류를 내며 종료
   코드 1을 반환해 테스트가 실패합니다. (소스 파일의 `@relation(ARCH-4, ...)`
@@ -253,36 +280,39 @@ bazel test //...
   않는 파일로 바꾸는 경우도 동일하게 검증됩니다 — 후자는 `TYPE: File`
   관계를 쓸 때 해당됩니다.)
 
-- **sphinx-needs**: `docs_needs/architecture.rst`에서 `ARCH-4`의
-  `:links: REQ-4`를 `:links: REQ-999`로 바꾸고
+- **sphinx-needs**: `modules/diagnostics/docs_needs/architecture.rst`에서
+  `ARCH-4`의 `:links: REQ-4`를 `:links: REQ-999`로 바꾸고
   `bazel test //:sphinx_needs_traceability_test`를 실행하면,
   `Need 'ARCH-4' has unknown outgoing link 'REQ-999'` 경고가 `-W` 옵션
   때문에 에러로 승격되어 테스트가 실패합니다.
 
-- **C++ 모듈 테스트**: 예를 들어 `src/diagnostics/diagnostics.cpp`의
-  `<` / `>` 비교를 뒤집으면 `tests/diagnostics_test.cpp`의 assert가
-  실패해 `bazel test //:diagnostics_test`가 실패합니다 — 요구사항 문서와
-  별개로, 구현 자체의 정확성도 이 저장소에서 함께 검증됩니다.
+- **C++ 모듈 테스트**: 예를 들어 `modules/diagnostics/src/diagnostics.cpp`의
+  `<` / `>` 비교를 뒤집으면 `modules/diagnostics/tests/diagnostics_test.cpp`의
+  assert가 실패해 `bazel test //:diagnostics_test`가 실패합니다 —
+  요구사항 문서와 별개로, 구현 자체의 정확성도 이 저장소에서 함께
+  검증됩니다.
 
-- **생성 코드의 `File` 관계**: `docs/architecture.sdoc`에서 `ARCH-7`의
-  `VALUE: src/speed_controller/speed_controller.h`를 존재하지 않는
-  경로로 바꾸고 `bazel test //:strictdoc_traceability_test`를 실행하면,
-  `references a file that does not exist` 오류로 테스트가 실패합니다 —
-  소스에 마커를 넣을 수 없는 생성 코드에서도 StrictDoc은 여전히 실제
-  파일 존재를 검증합니다. (sphinx-needs 쪽은 `docs_needs/implementation.rst`의
-  `IMPL-7`이 같은 경로를 텍스트로만 담고 있어 이 검증 자체가 불가능합니다.)
+- **생성 코드의 `File` 관계**: `modules/speed_controller/docs/architecture.sdoc`에서
+  `ARCH-7`의 `VALUE: modules/speed_controller/src/speed_controller.h`를
+  존재하지 않는 경로로 바꾸고 `bazel test //:strictdoc_traceability_test`를
+  실행하면, `references a file that does not exist` 오류로 테스트가
+  실패합니다 — 소스에 마커를 넣을 수 없는 생성 코드에서도 StrictDoc은
+  여전히 실제 파일 존재를 검증합니다. (sphinx-needs 쪽은
+  `modules/speed_controller/docs_needs/implementation.rst`의 `IMPL-7`이
+  같은 경로를 텍스트로만 담고 있어 이 검증 자체가 불가능합니다.)
 
 네 경우 모두 원래 값으로 되돌리면 다시 통과합니다.
 
 ## 두 도구 비교 (StrictDoc vs sphinx-needs)
 
-| 항목 | StrictDoc (`docs/`) | sphinx-needs (`docs_needs/`) |
+| 항목 | StrictDoc (`modules/<name>/docs/`) | sphinx-needs (`modules/<name>/docs_needs/`) |
 |---|---|---|
 | 문서 포맷 | 전용 `.sdoc` 텍스트 포맷 | Sphinx `.rst` + `sphinx_needs` 확장 지시어 |
 | 요구사항 노드 | `[REQUIREMENT]` | `.. req::` / `.. spec::` / `.. impl::` / `.. test::` |
 | 문서 간 관계 | `RELATIONS: TYPE: Parent VALUE: <UID>` | `:links: <UID>, <UID>` 옵션 |
 | 소스코드 ↔ 문서 관계 | 소스 파일에 직접 `@relation(UID, scope=...)` 주석을 써서 **자동으로 검증**됨 (`TYPE: File`도 지원) | 기본 기능 없음 — 본문에 파일 경로를 텍스트로만 적음, 실제 파일 존재 여부는 검증되지 않음 |
 | 깨진 관계 처리 | 파싱/빌드 단계에서 항상 **에러**(종료 코드 ≠ 0) | 기본은 **경고**일 뿐 빌드는 성공. `sphinx-build -W`로 경고를 에러로 승격해야 CI 게이트가 됨 |
+| 모듈별 폴더 분리 대응 | `include_doc_paths=["/modules/"]` 하나로 하위 전체를 재귀 탐색 — 모듈 폴더를 추가/이동해도 설정 변경 불필요, 명시적 색인 문서도 불필요 | 루트 문서가 소스 디렉터리 하위에 있어야 한다는 제약 때문에, 모듈이 아닌 별도의 `modules/docs_needs/index.rst` + `toctree`로 모든 모듈의 문서를 일일이 나열해 모아야 함 — 모듈을 추가할 때마다 이 색인도 함께 고쳐야 함 |
 | HTML 산출물 | 요구사항 트리, Traceability Matrix, Source Coverage 화면 | Sphinx HTML + needs 테이블/그래프(`needflow`, `needtable` 등, 이 저장소는 기본 화면만 사용) |
 | Bazel 실행 타겟 | `//:strictdoc` (`py_console_script_binary`) | `//:sphinx-build` (`py_console_script_binary`) |
 | Bazel 검증 타겟 | `//:strictdoc_traceability_test` | `//:sphinx_needs_traceability_test` |
@@ -295,7 +325,12 @@ bazel test //...
 sphinx-needs는 문서 간 관계까지만 기본 제공하고 소스코드 연결은 프로젝트가
 직접 컨벤션(예: Eclipse S-CORE의 `score_metamodel` 같은 커스텀 Sphinx
 확장)을 만들어야 하며, 그 문서 간 관계조차 CI에서 강제하려면 `-W` 같은
-옵션을 별도로 켜야 합니다. 7개 모듈로 규모를 키워보면 이 차이가 문서
+옵션을 별도로 켜야 합니다. 모듈별로 폴더를 나눠 보면 이 차이가 한 번 더
+드러납니다: StrictDoc은 `include_doc_paths` 하나로 폴더 구조와 무관하게
+전역 추적을 유지하지만, sphinx-needs는 Sphinx의 "루트 문서는 소스 트리
+안에 있어야 한다"는 제약 때문에 모듈이 아닌 별도의 최상위 색인
+(`modules/docs_needs/index.rst`)을 두고 그 안에서 모든 모듈의 문서 경로를
+일일이 나열해야 합니다. 7개 모듈로 규모를 키워보면 이 차이가 문서
 유지보수 비용으로 바로 드러납니다: StrictDoc은 소스 마커만 관리하면
 되지만, sphinx-needs는 `implementation.rst`/`verification.rst`를 소스
 변경과 별도로 계속 손으로 맞춰줘야 합니다. 생성 코드(`speed_controller`)
@@ -310,7 +345,10 @@ Bzlmod(`MODULE.bazel`) + `rules_python`으로 문서 툴체인을 hermetic하게
 받아오고, `bazel run //:ide_support` 같은 타겟으로 개발 환경을, CI에서
 문서 빌드/추적성 검사를 게이트로 두는 패턴을 씁니다. 이 저장소는 같은
 Bazel 패턴을 그대로 두고, 그 위에 StrictDoc(`.sdoc`)과 sphinx-needs를
-나란히 얹어 두 접근을 직접 비교할 수 있게 했습니다:
+나란히 얹어 두 접근을 직접 비교할 수 있게 했습니다. 여기에 더해, 각 SW
+모듈이 자신의 구현·테스트·문서를 한 폴더 아래 모두 갖는 구조
+(`modules/<name>/`)로 배치해, 실제 멀티모듈 프로젝트에서 모듈을
+추가/이동/삭제할 때 두 도구가 얼마나 잘 버티는지도 함께 드러나게 했습니다:
 
 - `//:strictdoc`, `//:sphinx-build` — 각각 `py_console_script_binary`로
   노출한 실행형 타겟 (Eclipse S-CORE의 `//:ide_support`에 대응)
@@ -336,18 +374,19 @@ Bazel 패턴을 그대로 두고, 그 위에 StrictDoc(`.sdoc`)과 sphinx-needs�
   검증용 테스트이며, 결과 HTML을 영구 아티팩트로 남기려면
   `bazel run //:strictdoc -- export ...` / `bazel run //:sphinx-build -- ...`를
   별도로 실행해야 합니다.
-- sphinx-needs 쪽의 `implementation.rst`/`verification.rst`에 적힌
-  `src/<module>/*`, `tests/<module>_test.cpp` 경로는 사람이 손으로 맞춰
-  적은 것이며, Bazel 테스트가 실제 파일 존재를 검증하지 않습니다 (위
-  비교표 참고). StrictDoc 쪽은 반대로 실제 파일 경로를 검증합니다.
-- C++ 모듈 테스트는 googletest 같은 프레임워크 없이 `tests/test_util.h`의
+- sphinx-needs 쪽의 각 모듈 `implementation.rst`/`verification.rst`에
+  적힌 소스/테스트 파일 경로는 사람이 손으로 맞춰 적은 것이며, Bazel
+  테스트가 실제 파일 존재를 검증하지 않습니다 (위 비교표 참고).
+  StrictDoc 쪽은 반대로 실제 파일 경로를 검증합니다.
+- C++ 모듈 테스트는 googletest 같은 프레임워크 없이 루트 `tests/test_util.h`의
   최소 assert 헬퍼만 사용합니다. 규모를 더 키우거나 실무에 맞추려면
   `bazel_dep(name = "googletest", ...)`를 추가하고 `cc_test`의 `deps`에
   `@googletest//:gtest_main`을 넣는 식으로 손쉽게 교체할 수 있습니다.
-- `src/speed_controller/*`는 이 저장소에 MATLAB/Simulink가 없어서 **실제로
-  Simulink Embedded Coder가 생성한 코드가 아닙니다** — Embedded Coder의
-  실제 출력 구조(배너 주석, `ExtU_`/`ExtY_`/`DW_`/`P_` 구조체, 진입점 이름
-  규칙)를 손으로 재현한 것이며, `models/speed_controller.md`에 이 사실과
+- `modules/speed_controller/src/*`는 이 저장소에 MATLAB/Simulink가
+  없어서 **실제로 Simulink Embedded Coder가 생성한 코드가 아닙니다** —
+  Embedded Coder의 실제 출력 구조(배너 주석, `ExtU_`/`ExtY_`/`DW_`/`P_`
+  구조체, 진입점 이름 규칙)를 손으로 재현한 것이며,
+  `modules/speed_controller/models/speed_controller.md`에 이 사실과
   원본 블록 다이어그램을 명시해 두었습니다. 목적은 "생성 코드는 손으로
   건드릴 수 없다"는 제약 하에서 두 추적성 도구가 어떻게 다르게 대응하는지
   보여주는 것이지, 실제 MATLAB 산출물을 재현하는 것이 아닙니다.

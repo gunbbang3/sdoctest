@@ -1,0 +1,14 @@
+[DOCUMENT]
+TITLE: Logger Architecture
+PREFIX: ARCH-
+
+[REQUIREMENT]
+UID: ARCH-5
+TITLE: Logger module
+STATEMENT: >>>
+The ``Logger`` C++ class implements REQ-5 by recording severity-tagged
+entries.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-5

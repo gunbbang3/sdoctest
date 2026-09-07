@@ -11,11 +11,14 @@ def create_config() -> ProjectConfig:
             "TRACEABILITY_MATRIX_SCREEN",
             "REQUIREMENT_TO_SOURCE_TRACEABILITY",
         ],
+        # Every module owns its own docs/ (StrictDoc) and src/, tests/
+        # (source) under modules/<name>/ -- StrictDoc discovers .sdoc
+        # files and @relation(...) source markers recursively, so a
+        # single root path covers all modules regardless of folder depth.
         include_doc_paths=[
-            "/docs/",
+            "/modules/",
         ],
         include_source_paths=[
-            "/src/**",
-            "/tests/**",
+            "/modules/**",
         ],
     )

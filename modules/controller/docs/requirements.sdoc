@@ -1,0 +1,12 @@
+[DOCUMENT]
+TITLE: Controller Requirements
+PREFIX: REQ-
+
+[REQUIREMENT]
+UID: REQ-6
+TITLE: Integrate acquisition, filtering, diagnostics, and logging
+STATEMENT: >>>
+The system shall integrate sensor acquisition, signal filtering, range
+diagnostics, and logging into a single control cycle that processes every
+available sample.
+<<<

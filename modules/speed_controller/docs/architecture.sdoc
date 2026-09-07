@@ -1,0 +1,24 @@
+[DOCUMENT]
+TITLE: SpeedController Architecture
+PREFIX: ARCH-
+
+[REQUIREMENT]
+UID: ARCH-7
+TITLE: SpeedController module (Simulink MBD generated)
+STATEMENT: >>>
+The ``speed_controller`` C module implements REQ-7. It is generated from
+a Simulink model (see models/speed_controller.md, in this same module
+folder) with Simulink Embedded Coder and must not be hand-edited;
+regenerating it from the model is the only supported way to change its
+behavior. Because of that, this relation links directly to the generated
+files themselves (``TYPE: File``) instead of relying on an in-file
+``@relation(...)`` marker, which is how the other six (hand-written)
+modules are linked.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-7
+- TYPE: File
+  VALUE: modules/speed_controller/src/speed_controller.c
+- TYPE: File
+  VALUE: modules/speed_controller/src/speed_controller.h

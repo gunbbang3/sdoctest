@@ -18,8 +18,9 @@ py_console_script_binary(
 )
 
 # `bazel test //:strictdoc_traceability_test` builds the StrictDoc
-# documentation tree (docs/, src/, tests/) and fails if any requirement <->
-# architecture <-> source-code relation is broken.
+# documentation tree (every module's own docs/, src/, tests/ under
+# modules/<name>/) and fails if any requirement <-> architecture <->
+# source-code relation is broken.
 py_test(
     name = "strictdoc_traceability_test",
     srcs = ["tests/strictdoc_traceability_test.py"],
@@ -28,9 +29,7 @@ py_test(
         ":strictdoc",
         ":strictdoc_config.py",
     ] + glob([
-        "docs/**",
-        "src/**",
-        "tests/**",
+        "modules/**",
     ]),
     deps = ["@rules_python//python/runfiles"],
 )
@@ -38,22 +37,23 @@ py_test(
 # --- Sphinx + sphinx-needs (Eclipse S-CORE's docs-as-code approach) --------
 
 # Run Sphinx directly, e.g.:
-#   bazel run //:sphinx-build -- -W -b html docs_needs /tmp/needs-html
+#   bazel run //:sphinx-build -- -W -b html -c modules/docs_needs modules /tmp/needs-html
 py_console_script_binary(
     name = "sphinx-build",
     pkg = "@pip//sphinx:pkg",
     # sphinx itself doesn't depend on sphinx-needs; add it explicitly so
-    # `extensions = ["sphinx_needs"]` in docs_needs/conf.py can be imported.
+    # `extensions = ["sphinx_needs"]` in modules/docs_needs/conf.py can be
+    # imported.
     deps = ["@pip//sphinx_needs"],
 )
 
 # `bazel test //:sphinx_needs_traceability_test` builds the sphinx-needs
-# documentation tree (docs_needs/) with `-W` (warnings-as-errors) and fails
-# if any `:links:` reference is dangling. Note this only checks doc-to-doc
-# links: unlike StrictDoc, sphinx-needs does not itself verify that the
-# `src/**` / `tests/**` paths mentioned as plain text in
-# docs_needs/implementation.rst and verification.rst actually exist -- see
-# README.md for the full comparison.
+# documentation tree (modules/docs_needs/index.rst ties together every
+# module's own docs_needs/) with `-W` (warnings-as-errors) and fails if any
+# `:links:` reference is dangling. Note this only checks doc-to-doc links:
+# unlike StrictDoc, sphinx-needs does not itself verify that the source
+# paths mentioned as plain text in each module's implementation.rst and
+# verification.rst actually exist -- see README.md for the full comparison.
 py_test(
     name = "sphinx_needs_traceability_test",
     srcs = ["tests/sphinx_needs_traceability_test.py"],
@@ -61,7 +61,7 @@ py_test(
     data = [
         ":sphinx-build",
     ] + glob([
-        "docs_needs/**",
+        "modules/**",
     ]),
     deps = ["@rules_python//python/runfiles"],
 )
@@ -77,50 +77,55 @@ test_suite(
 
 # --- C++ example system (7 modules) -----------------------------------------
 #
-# A small signal-processing pipeline used as the traceability example:
+# Each SW module owns a self-contained folder under modules/<name>/:
+#   src/            implementation (cc_library below)
+#   tests/          that module's own unit test (cc_test below)
+#   docs/           StrictDoc requirements + architecture for this module
+#   docs_needs/     the same content, as sphinx-needs
+#
 #   SensorInput -> MovingAverageFilter -> Controller -> RangeDiagnostics
 #                                              |-> Logger
 # plus a 7th, independent Simulink-MBD-generated module (speed_controller,
 # below). The 6 hand-written modules' header/source carry an
-# `@relation(ARCH-N, scope=file)` marker (see docs/architecture.sdoc /
-# docs_needs/architecture.rst), so building and testing these targets is
-# also what strictdoc_traceability_test and sphinx_needs_traceability_test
-# rely on for the source-code side.
+# `@relation(ARCH-N, scope=file)` marker (see modules/<name>/docs/architecture.sdoc
+# / modules/<name>/docs_needs/architecture.rst), so building and testing
+# these targets is also what strictdoc_traceability_test and
+# sphinx_needs_traceability_test rely on for the source-code side.
 
 cc_library(
     name = "math_utils",
-    srcs = ["src/math_utils/math_utils.cpp"],
-    hdrs = ["src/math_utils/math_utils.h"],
+    srcs = ["modules/math_utils/src/math_utils.cpp"],
+    hdrs = ["modules/math_utils/src/math_utils.h"],
 )
 
 cc_library(
     name = "sensor_input",
-    srcs = ["src/sensor_input/sensor_input.cpp"],
-    hdrs = ["src/sensor_input/sensor_input.h"],
+    srcs = ["modules/sensor_input/src/sensor_input.cpp"],
+    hdrs = ["modules/sensor_input/src/sensor_input.h"],
 )
 
 cc_library(
     name = "signal_filter",
-    srcs = ["src/signal_filter/signal_filter.cpp"],
-    hdrs = ["src/signal_filter/signal_filter.h"],
+    srcs = ["modules/signal_filter/src/signal_filter.cpp"],
+    hdrs = ["modules/signal_filter/src/signal_filter.h"],
 )
 
 cc_library(
     name = "diagnostics",
-    srcs = ["src/diagnostics/diagnostics.cpp"],
-    hdrs = ["src/diagnostics/diagnostics.h"],
+    srcs = ["modules/diagnostics/src/diagnostics.cpp"],
+    hdrs = ["modules/diagnostics/src/diagnostics.h"],
 )
 
 cc_library(
     name = "logger",
-    srcs = ["src/logger/logger.cpp"],
-    hdrs = ["src/logger/logger.h"],
+    srcs = ["modules/logger/src/logger.cpp"],
+    hdrs = ["modules/logger/src/logger.h"],
 )
 
 cc_library(
     name = "controller",
-    srcs = ["src/controller/controller.cpp"],
-    hdrs = ["src/controller/controller.h"],
+    srcs = ["modules/controller/src/controller.cpp"],
+    hdrs = ["modules/controller/src/controller.h"],
     deps = [
         ":diagnostics",
         ":logger",
@@ -130,6 +135,8 @@ cc_library(
     ],
 )
 
+# Shared test infrastructure (not a module): a minimal assert helper used
+# by every module's cc_test below.
 cc_library(
     name = "test_util",
     testonly = True,
@@ -138,37 +145,37 @@ cc_library(
 
 cc_test(
     name = "math_utils_test",
-    srcs = ["tests/math_utils_test.cpp"],
+    srcs = ["modules/math_utils/tests/math_utils_test.cpp"],
     deps = [":math_utils", ":test_util"],
 )
 
 cc_test(
     name = "sensor_input_test",
-    srcs = ["tests/sensor_input_test.cpp"],
+    srcs = ["modules/sensor_input/tests/sensor_input_test.cpp"],
     deps = [":sensor_input", ":test_util"],
 )
 
 cc_test(
     name = "signal_filter_test",
-    srcs = ["tests/signal_filter_test.cpp"],
+    srcs = ["modules/signal_filter/tests/signal_filter_test.cpp"],
     deps = [":signal_filter", ":test_util"],
 )
 
 cc_test(
     name = "diagnostics_test",
-    srcs = ["tests/diagnostics_test.cpp"],
+    srcs = ["modules/diagnostics/tests/diagnostics_test.cpp"],
     deps = [":diagnostics", ":test_util"],
 )
 
 cc_test(
     name = "logger_test",
-    srcs = ["tests/logger_test.cpp"],
+    srcs = ["modules/logger/tests/logger_test.cpp"],
     deps = [":logger", ":test_util"],
 )
 
 cc_test(
     name = "controller_test",
-    srcs = ["tests/controller_test.cpp"],
+    srcs = ["modules/controller/tests/controller_test.cpp"],
     deps = [
         ":controller",
         ":diagnostics",
@@ -183,24 +190,25 @@ cc_test(
 #
 # Hand-authored to faithfully resemble Simulink Embedded Coder's actual
 # generated-code structure (banner comments, ExtU_/ExtY_/DW_/P_ structs,
-# <model>_initialize/_step/_terminate) -- see models/speed_controller.md
-# for the disclaimer and block diagram. Unlike the other six modules,
-# these generated files carry NO `@relation(...)` source marker: they are
-# not meant to be hand-edited, so ARCH-7 links to them via a doc-side
-# `TYPE: File` relation instead (see docs/architecture.sdoc). Only the
-# hand-written test below carries the usual marker.
+# <model>_initialize/_step/_terminate) -- see
+# modules/speed_controller/models/speed_controller.md for the disclaimer
+# and block diagram. Unlike the other six modules, these generated files
+# carry NO `@relation(...)` source marker: they are not meant to be
+# hand-edited, so ARCH-7 links to them via a doc-side `TYPE: File`
+# relation instead (see modules/speed_controller/docs/architecture.sdoc).
+# Only the hand-written test below carries the usual marker.
 cc_library(
     name = "speed_controller",
-    srcs = ["src/speed_controller/speed_controller.c"],
+    srcs = ["modules/speed_controller/src/speed_controller.c"],
     hdrs = [
-        "src/speed_controller/rtwtypes.h",
-        "src/speed_controller/speed_controller.h",
+        "modules/speed_controller/src/rtwtypes.h",
+        "modules/speed_controller/src/speed_controller.h",
     ],
 )
 
 cc_test(
     name = "speed_controller_test",
-    srcs = ["tests/speed_controller_test.cpp"],
+    srcs = ["modules/speed_controller/tests/speed_controller_test.cpp"],
     deps = [":speed_controller", ":test_util"],
 )
 

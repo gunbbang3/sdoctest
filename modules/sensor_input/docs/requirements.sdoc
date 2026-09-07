@@ -1,0 +1,11 @@
+[DOCUMENT]
+TITLE: SensorInput Requirements
+PREFIX: REQ-
+
+[REQUIREMENT]
+UID: REQ-1
+TITLE: Provide raw sensor readings
+STATEMENT: >>>
+The system shall provide access to raw, unfiltered readings from a sensor
+input source, indexed by sample number.
+<<<

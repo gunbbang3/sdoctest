@@ -21,7 +21,7 @@ jobs:
         run: bazel run //:strictdoc -- export "$GITHUB_WORKSPACE" --output-dir="${RUNNER_TEMP}/sdoc-html"
 
       - name: Build the sphinx-needs HTML export
-        run: bazel run //:sphinx-build -- -W -b html "$GITHUB_WORKSPACE/docs_needs" "${RUNNER_TEMP}/needs-html"
+        run: bazel run //:sphinx-build -- -W -b html -c "$GITHUB_WORKSPACE/modules/docs_needs" "$GITHUB_WORKSPACE/modules" "${RUNNER_TEMP}/needs-html"
 
       - name: Run the C++ example module tests
         run: bazel test //:cpp_module_tests --test_output=errors

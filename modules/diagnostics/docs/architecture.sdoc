@@ -1,0 +1,14 @@
+[DOCUMENT]
+TITLE: Diagnostics Architecture
+PREFIX: ARCH-
+
+[REQUIREMENT]
+UID: ARCH-4
+TITLE: Diagnostics module
+STATEMENT: >>>
+The ``RangeDiagnostics`` C++ class implements REQ-4 by checking a value
+against a configured [lo, hi] range.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-4

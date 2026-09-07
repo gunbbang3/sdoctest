@@ -1,0 +1,29 @@
+[DOCUMENT]
+TITLE: Controller Architecture
+PREFIX: ARCH-
+
+[REQUIREMENT]
+UID: ARCH-6
+TITLE: Controller module
+STATEMENT: >>>
+The ``Controller`` C++ class implements REQ-6 by composing SensorInput,
+SignalFilter, Diagnostics, Logger and MathUtils into one control cycle.
+These are cross-module relations: ARCH-1 (sensor_input), ARCH-2
+(signal_filter), ARCH-3 (math_utils), ARCH-4 (diagnostics) and ARCH-5
+(logger) each live in their own module folder under modules/, and
+StrictDoc resolves the UIDs project-wide regardless of which file they
+are declared in.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-6
+- TYPE: Parent
+  VALUE: ARCH-1
+- TYPE: Parent
+  VALUE: ARCH-2
+- TYPE: Parent
+  VALUE: ARCH-3
+- TYPE: Parent
+  VALUE: ARCH-4
+- TYPE: Parent
+  VALUE: ARCH-5

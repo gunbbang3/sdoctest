@@ -1,0 +1,11 @@
+[DOCUMENT]
+TITLE: MathUtils Requirements
+PREFIX: REQ-
+
+[REQUIREMENT]
+UID: REQ-3
+TITLE: Provide arithmetic utility functions
+STATEMENT: >>>
+The system shall provide reusable arithmetic utility functions, including
+addition and clamping a value into a closed interval.
+<<<

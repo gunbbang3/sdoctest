@@ -1,0 +1,14 @@
+[DOCUMENT]
+TITLE: SensorInput Architecture
+PREFIX: ARCH-
+
+[REQUIREMENT]
+UID: ARCH-1
+TITLE: SensorInput module
+STATEMENT: >>>
+The ``SensorInput`` C++ class implements REQ-1 by exposing raw sensor
+samples by index.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-1

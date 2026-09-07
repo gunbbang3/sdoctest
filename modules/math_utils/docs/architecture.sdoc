@@ -1,0 +1,13 @@
+[DOCUMENT]
+TITLE: MathUtils Architecture
+PREFIX: ARCH-
+
+[REQUIREMENT]
+UID: ARCH-3
+TITLE: MathUtils module
+STATEMENT: >>>
+The ``math_utils`` C++ functions (``Add``, ``Clamp``) implement REQ-3.
+<<<
+RELATIONS:
+- TYPE: Parent
+  VALUE: REQ-3
