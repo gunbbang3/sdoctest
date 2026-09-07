@@ -17,32 +17,18 @@ jobs:
           disk-cache: ${{ github.workflow }}
           repository-cache: true
 
-      - name: Run the C++ example module tests
-        run: bazel test //:cpp_module_tests --test_output=errors
-
-      - name: Check traceability (StrictDoc + sphinx-needs, back-to-back)
-        run: bazel test //:traceability_tests --test_output=errors
-
-      - name: Build the StrictDoc + sphinx-needs HTML traceability reports
-        run: bazel build //:traceability_reports
-
-      # Test results (bazel-testlogs/<target>/test.xml, JUnit format) are
-      # written automatically by `bazel test` above; the traceability
-      # reports are the two tarballs //:traceability_reports just built.
-      # Both are collected here as downloadable workflow run artifacts.
-      - name: Collect test results and traceability reports
-        if: always()
-        run: |
-          set -e
-          mkdir -p "${RUNNER_TEMP}/artifacts/test-results"
-          mkdir -p "${RUNNER_TEMP}/artifacts/traceability-reports"
-          find -L bazel-testlogs -name 'test.xml' -exec cp --parents {} "${RUNNER_TEMP}/artifacts/test-results/" \;
-          cp bazel-bin/strictdoc-report.tar.gz bazel-bin/sphinx-needs-report.tar.gz \
-            "${RUNNER_TEMP}/artifacts/traceability-reports/"
+      # Runs //... (7 module unit tests + 2 traceability tests) and
+      # //:traceability_reports, then collects both into build/ at the
+      # repo root -- the same script a developer runs locally, so CI and
+      # local runs produce the same layout. Exits non-zero if any test
+      # failed (after still collecting what it could), which fails this
+      # step and the job.
+      - name: Generate test-result and traceability reports (build/)
+        run: scripts/generate_reports.sh
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-and-traceability-reports
-          path: ${{ runner.temp }}/artifacts
+          path: build
           retention-days: 30

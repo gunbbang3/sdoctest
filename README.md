@@ -120,7 +120,14 @@ tests/                        모듈에 속하지 않는, 저장소 전체를 �
                                         (7개 모듈의 cc_test 자체는 GoogleTest에 직접 링크하므로
                                          공용 헬퍼 파일은 따로 없습니다)
 
-.github/workflows/traceability.yml   PR/main 푸시마다 C++ 모듈 테스트 + 두 문서 도구를 모두 검증하는 CI
+scripts/generate_reports.sh          bazel test/build를 실행하고 결과를 build/에 모으는 스크립트
+                                      (로컬/CI 공용, 아래 "산출물" 절 참고)
+build/                                위 스크립트가 만드는 산출물 (커밋되지 않음, .gitignore 대상)
+  test-results/bazel-testlogs/<target>/test.xml   테스트 결과 (JUnit XML)
+  reports/{strictdoc,sphinx-needs}/    두 도구의 HTML 추적성 리포트
+
+.github/workflows/traceability.yml   PR/main 푸시마다 C++ 모듈 테스트 + 두 문서 도구를 모두 검증하고,
+                                      scripts/generate_reports.sh로 build/를 만들어 아티팩트로 업로드하는 CI
 ```
 
 **StrictDoc 쪽** 추적 체인은 모듈마다 `REQ-N → ARCH-N → modules/<name>/src/*
@@ -308,63 +315,50 @@ bazel test //...
 
 ## 산출물 (테스트 결과 / 추적성 리포트)
 
-`bazel test`/`bazel build`를 실행하면 아래 두 종류의 산출물이 재현
-가능한 Bazel 빌드 출력으로 만들어집니다. 둘 다 소스 트리에는 커밋되지
-않고(`bazel-*`는 `.gitignore` 대상) 매번 새로 빌드되는 형상 산출물이며,
-CI에서는 워크플로우 실행마다 GitHub Actions 아티팩트로 자동 업로드됩니다
-(아래 "CI에서" 참고).
-
-### 테스트 결과 (JUnit XML)
-
-`bazel test`는 실행한 모든 테스트 타겟(7개 모듈 GoogleTest + StrictDoc/
-sphinx-needs 추적성 테스트 2개, 총 9개)에 대해 별도 설정 없이
-JUnit 형식 XML을 자동으로 남깁니다.
-
 ```bash
-bazel test //... --test_output=errors
-find -L bazel-testlogs -name test.xml
-# 예: bazel-testlogs/math_utils_test/test.xml
-#     bazel-testlogs/strictdoc_traceability_test/test.xml
+scripts/generate_reports.sh
 ```
 
-각 파일에는 `<testsuite>`/`<testcase>` 단위로 통과/실패, 소요 시간,
-(GoogleTest 쪽은) 실패 시 어떤 `EXPECT_*`가 어디서 깨졌는지가 담깁니다.
-Jenkins의 JUnit 플러그인이나 GitHub Actions의 테스트 리포터 액션 등
-JUnit XML을 읽는 도구라면 그대로 붙일 수 있는 표준 포맷입니다.
+이 한 명령이 테스트 결과와 두 추적성 리포트를 모두 만들어 저장소 루트의
+**`build/`** 폴더 아래에 채워 넣습니다 (로컬과 CI가 동일한 스크립트,
+동일한 레이아웃을 씁니다):
 
-### 추적성 리포트 (HTML)
+```
+build/
+  test-results/
+    bazel-testlogs/<target>/test.xml   JUnit XML, 9개 테스트 타겟 전부
+                                        (7개 모듈 GoogleTest + StrictDoc/sphinx-needs 추적성 테스트 2개)
+  reports/
+    strictdoc/index.html               StrictDoc 리포트 (요구사항 트리, Traceability Matrix, Source Coverage)
+    sphinx-needs/docs_needs/index.html sphinx-needs 리포트 (요구사항/아키텍처 + needs 테이블)
+                                        (root_doc 설정 때문에 docs_needs/ 한 단계 아래가 진입점)
+```
 
-`//:strictdoc_report`, `//:sphinx_needs_report` (묶어서
-`//:traceability_reports`) genrule 타겟이 `bazel run` 없이도 두 도구의
-HTML 리포트를 압축 파일 하나짜리 빌드 산출물로 만들어 줍니다.
+`build/`는 매번 새로 만들어지는 산출물이라 소스로 커밋하지 않고
+`.gitignore`에 등록해 두었습니다 (`bazel-*`와 같은 성격). Bazel 자체는
+빌드 액션이 소스 트리에 직접 쓰는 것을 허용하지 않으므로, 이 스크립트가
+`bazel test`/`bazel build`가 만든 `bazel-testlogs`/`bazel-bin`의 결과물을
+`build/` 아래로 복사/압축 해제해 "형상에 반영"하는 역할을 합니다. 테스트가
+실패해도(`bazel test`가 종료 코드 3을 반환해도) 스크립트는 그때까지
+만들어진 결과를 최대한 `build/`에 모은 뒤 마지막에 실패를 다시
+보고합니다 — 실패한 실행에서도 `build/test-results/`를 열어 어떤
+테스트가 왜 깨졌는지 바로 확인할 수 있습니다.
+
+내부적으로는 다음을 순서대로 실행합니다:
 
 ```bash
-bazel build //:traceability_reports
-# bazel-bin/strictdoc-report.tar.gz      (요구사항 트리, Traceability Matrix, Source Coverage)
-# bazel-bin/sphinx-needs-report.tar.gz   (요구사항/아키텍처 + needs 테이블)
-
-# 열어보기
-mkdir -p /tmp/sdoc-report && tar -xzf bazel-bin/strictdoc-report.tar.gz -C /tmp/sdoc-report
-open /tmp/sdoc-report/index.html                       # StrictDoc은 최상위 index.html
-
-mkdir -p /tmp/needs-report && tar -xzf bazel-bin/sphinx-needs-report.tar.gz -C /tmp/needs-report
-open /tmp/needs-report/docs_needs/index.html            # sphinx-needs는 docs_needs/index.html
-                                                          # (root_doc 설정 때문에 한 단계 아래)
+bazel test //...                    # 9개 테스트 타겟 모두 실행 (JUnit XML은 별도 설정 없이 자동 생성)
+bazel build //:traceability_reports # //:strictdoc_report + //:sphinx_needs_report
 ```
 
 ### CI에서
 
-`.github/workflows/traceability.yml`은 PR/main 푸시마다:
-
-1. `//:cpp_module_tests`, `//:traceability_tests`를 실행해 테스트
-   결과(JUnit XML)를 남기고,
-2. `//:traceability_reports`를 빌드해 두 HTML 리포트를 만든 뒤,
-3. 둘을 `${RUNNER_TEMP}/artifacts/{test-results,traceability-reports}`로
-   모아 `actions/upload-artifact`로 워크플로우 실행에 첨부합니다
-   (`test-and-traceability-reports`라는 이름으로, 30일 보관).
-
-GitHub의 Actions 실행 화면 하단 "Artifacts" 항목에서 실패 여부와
-무관하게(`if: always()`) 매 실행마다 내려받을 수 있습니다.
+`.github/workflows/traceability.yml`은 PR/main 푸시마다 위 스크립트를
+그대로 실행한 뒤, 생성된 `build/` 디렉터리 전체를
+`actions/upload-artifact`로 워크플로우 실행에 첨부합니다
+(`test-and-traceability-reports`라는 이름, 30일 보관, 실패 여부와
+무관하게 `if: always()`로 업로드). GitHub Actions 실행 화면 하단의
+"Artifacts" 항목에서 매 실행마다 내려받을 수 있습니다.
 
 ## 두 도구 비교 (StrictDoc vs sphinx-needs)
 
